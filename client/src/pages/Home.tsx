@@ -1,173 +1,171 @@
 /* Atlas Flux — console cartographique éditoriale : strates d’information, tonalités minérales et orange Méridien réservé au signal. */
 import DeckGL from "@deck.gl/react";
-import { ArcLayer, PathLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { GeoJsonLayer } from "@deck.gl/layers";
 import { Button } from "@/components/ui/button";
+import Map, { NavigationControl } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
   Activity,
   ArrowUpRight,
+  CalendarDays,
+  Check,
   Crosshair,
+  Database,
+  ExternalLink,
   Layers3,
   LocateFixed,
   MapPin,
-  Route,
   Sparkles,
+  X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Coordinate = [number, number];
 
-type RouteDatum = {
-  id: string;
-  name: string;
-  source: Coordinate;
-  target: Coordinate;
-  volume: string;
-  color: [number, number, number, number];
+type ParisProject = {
+  titre_descriptif: string;
+  corps_descriptif?: string | null;
+  categorie?: string | null;
+  sous_categorie?: string | null;
+  adresse?: string | null;
+  code_postal?: string | null;
+  date_liv: string;
+  url_parisfr?: string | null;
+  url_pj?: string | null;
+  geo_shape?: {
+    type: "Feature";
+    geometry?: { type: "Point"; coordinates?: Coordinate };
+  };
 };
 
-type HubDatum = {
-  id: string;
-  name: string;
-  position: Coordinate;
-  size: number;
-  color: [number, number, number, number];
+type ParisFeature = {
+  type: "Feature";
+  geometry: { type: "Point"; coordinates: Coordinate };
+  properties: ParisProject;
 };
 
-type SurveyPath = {
-  id: string;
-  path: Coordinate[];
-};
+type ParisApiResponse = { results?: ParisProject[] };
 
 const INITIAL_VIEW = {
   longitude: 2.3499,
   latitude: 48.8566,
-  zoom: 10.55,
-  pitch: 38,
-  bearing: -14,
+  zoom: 11.25,
+  pitch: 32,
+  bearing: -8,
 };
 
-const ROUTES: RouteDatum[] = [
-  {
-    id: "r-01",
-    name: "Nord → Centre",
-    source: [2.312, 48.942],
-    target: [2.3499, 48.8566],
-    volume: "4 820 passages",
-    color: [255, 107, 53, 238],
-  },
-  {
-    id: "r-02",
-    name: "Est → Centre",
-    source: [2.486, 48.863],
-    target: [2.3499, 48.8566],
-    volume: "3 146 passages",
-    color: [242, 194, 78, 212],
-  },
-  {
-    id: "r-03",
-    name: "Sud → Centre",
-    source: [2.371, 48.776],
-    target: [2.3499, 48.8566],
-    volume: "2 674 passages",
-    color: [73, 180, 169, 205],
-  },
-];
+const PARIS_DATA_URL =
+  "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/parissetransforme/records?limit=100&where=date_liv%20is%20not%20null&order_by=date_liv%20desc";
 
-const HUBS: HubDatum[] = [
-  { id: "h-01", name: "Nœud Nord", position: [2.312, 48.942], size: 900, color: [255, 107, 53, 250] },
-  { id: "h-02", name: "Nœud Est", position: [2.486, 48.863], size: 780, color: [242, 194, 78, 245] },
-  { id: "h-03", name: "Nœud Sud", position: [2.371, 48.776], size: 720, color: [73, 180, 169, 240] },
-  { id: "h-04", name: "Centre", position: [2.3499, 48.8566], size: 1160, color: [255, 107, 53, 255] },
-];
+const VECTOR_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
-const SURVEY_PATHS: SurveyPath[] = [
-  { id: "p-01", path: [[2.29, 48.92], [2.34, 48.9], [2.39, 48.87], [2.42, 48.82]] },
-  { id: "p-02", path: [[2.28, 48.81], [2.34, 48.83], [2.4, 48.85], [2.46, 48.89]] },
-];
+function categoryColor(category?: string | null): [number, number, number, number] {
+  if (category?.includes("Nature") || category?.includes("Espace")) return [73, 180, 169, 220];
+  if (category?.includes("Logement")) return [242, 194, 78, 225];
+  if (category?.includes("Culture") || category?.includes("Sport")) return [186, 137, 210, 220];
+  return [255, 107, 53, 230];
+}
 
-const LAYER_OPTIONS = [
-  { id: "routes", label: "Trajectoires", note: "03 actifs" },
-  { id: "hubs", label: "Nœuds", note: "04 relevés" },
-  { id: "survey", label: "Axes d’enquête", note: "02 tracés" },
-] as const;
+function formatProjectDate(value: string) {
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
+}
 
-type LayerId = (typeof LAYER_OPTIONS)[number]["id"];
+function projectYear(project: ParisProject) {
+  return new Date(`${project.date_liv}T12:00:00`).getFullYear();
+}
 
 export default function Home() {
-  const [visibleLayers, setVisibleLayers] = useState<Record<LayerId, boolean>>({
-    routes: true,
-    hubs: true,
-    survey: true,
-  });
-  const [selectedRoute, setSelectedRoute] = useState<RouteDatum>(ROUTES[0]);
+  const [projects, setProjects] = useState<ParisProject[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number | "all">("all");
+  const [selectedProject, setSelectedProject] = useState<ParisProject | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataError, setDataError] = useState(false);
+  const [projectsVisible, setProjectsVisible] = useState(true);
   const [viewKey, setViewKey] = useState(0);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProjects() {
+      try {
+        const pageRequests = Array.from({ length: 6 }, (_, page) =>
+          fetch(`${PARIS_DATA_URL}&offset=${page * 100}`),
+        );
+        const responses = await Promise.all(pageRequests);
+        if (responses.some((response) => !response.ok)) throw new Error("La source Paris Data est indisponible.");
+        const pages = (await Promise.all(responses.map((response) => response.json()))) as ParisApiResponse[];
+        const usableProjects = pages.flatMap((page) => page.results ?? []).filter((project) => {
+          const coordinates = project.geo_shape?.geometry?.coordinates;
+          return Array.isArray(coordinates) && coordinates.length === 2;
+        });
+        if (isMounted) {
+          setProjects(usableProjects);
+          const latestYear = Math.max(...usableProjects.map(projectYear));
+          if (Number.isFinite(latestYear)) setSelectedYear(latestYear);
+        }
+      } catch {
+        if (isMounted) setDataError(true);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadProjects();
+    return () => { isMounted = false; };
+  }, []);
+
+  const availableYears = useMemo(
+    () => Array.from(new Set(projects.map(projectYear))).sort((a, b) => b - a),
+    [projects],
+  );
+
+  const filteredProjects = useMemo(
+    () => projects.filter((project) => selectedYear === "all" || projectYear(project) === selectedYear),
+    [projects, selectedYear],
+  );
+
+  const projectFeatures = useMemo<ParisFeature[]>(
+    () => filteredProjects.flatMap((project) => {
+      const coordinates = project.geo_shape?.geometry?.coordinates;
+      return coordinates ? [{ type: "Feature", geometry: { type: "Point", coordinates }, properties: project }] : [];
+    }),
+    [filteredProjects],
+  );
+
   const layers = useMemo(() => {
-    const activeLayers = [];
-
-    if (visibleLayers.survey) {
-      activeLayers.push(
-        new PathLayer<SurveyPath>({
-          id: "survey-paths",
-          data: SURVEY_PATHS,
-          getPath: (datum) => datum.path,
-          getColor: [187, 205, 196, 82],
-          getWidth: 2,
-          widthMinPixels: 1,
-          widthMaxPixels: 3,
-          jointRounded: true,
-          capRounded: true,
-        }),
-      );
-    }
-
-    if (visibleLayers.routes) {
-      activeLayers.push(
-        new ArcLayer<RouteDatum>({
-          id: "flow-routes",
-          data: ROUTES,
-          getSourcePosition: (datum) => datum.source,
-          getTargetPosition: (datum) => datum.target,
-          getSourceColor: (datum) => datum.color,
-          getTargetColor: [255, 107, 53, 32],
-          getWidth: (datum) => (datum.id === selectedRoute.id ? 7 : 4),
-          widthMinPixels: 2,
-          widthMaxPixels: 9,
-          greatCircle: true,
-          pickable: true,
-          updateTriggers: { getWidth: selectedRoute.id },
-        }),
-      );
-    }
-
-    if (visibleLayers.hubs) {
-      activeLayers.push(
-        new ScatterplotLayer<HubDatum>({
-          id: "activity-hubs",
-          data: HUBS,
-          getPosition: (datum) => datum.position,
-          getRadius: (datum) => datum.size,
-          getFillColor: (datum) => datum.color,
-          radiusMinPixels: 4,
-          radiusMaxPixels: 20,
-          stroked: true,
-          getLineColor: [253, 246, 232, 175],
-          lineWidthMinPixels: 1,
-          pickable: true,
-        }),
-      );
-    }
-
-    return activeLayers;
-  }, [selectedRoute.id, visibleLayers]);
-
-  function toggleLayer(id: LayerId) {
-    setVisibleLayers((current) => ({ ...current, [id]: !current[id] }));
-  }
+    if (!projectsVisible) return [];
+    return [
+      new GeoJsonLayer<ParisProject>({
+        id: "paris-projects",
+        data: projectFeatures,
+        pointType: "circle",
+        filled: true,
+        stroked: true,
+        getPointRadius: (feature) => (feature.properties.titre_descriptif === selectedProject?.titre_descriptif ? 155 : 96),
+        getFillColor: (feature) => categoryColor(feature.properties.categorie),
+        getLineColor: [250, 246, 235, 210],
+        getLineWidth: 2,
+        pointRadiusMinPixels: 5,
+        pointRadiusMaxPixels: 18,
+        lineWidthMinPixels: 1,
+        pickable: true,
+        autoHighlight: true,
+        highlightColor: [255, 237, 186, 160],
+        updateTriggers: { getPointRadius: selectedProject?.titre_descriptif },
+      }),
+    ];
+  }, [projectFeatures, projectsVisible, selectedProject?.titre_descriptif]);
 
   function resetView() {
     setViewKey((value) => value + 1);
   }
+
+  function selectYear(year: number | "all") {
+    setSelectedYear(year);
+    setSelectedProject(null);
+  }
+
+  const yearLabel = selectedYear === "all" ? "Toutes les livraisons" : `Livraisons ${selectedYear}`;
 
   return (
     <div className="atlas-shell">
@@ -178,7 +176,7 @@ export default function Home() {
         </a>
         <div className="atlas-header-meta" aria-label="Contexte des données">
           <span className="live-dot" />
-          <span>RELEVÉ SYNTHÉTIQUE</span>
+          <span>PARIS DATA / DIRECT</span>
           <span className="header-rule" />
           <span>PARIS / 48.8566° N</span>
         </div>
@@ -187,8 +185,8 @@ export default function Home() {
         </a>
       </header>
 
-      <main id="observatoire" className="atlas-observatory">
-        <section className="atlas-map-stage" aria-label="Carte interactive des flux urbains">
+      <main id="observatoire" className="atlas-observatory atlas-observatory-live">
+        <section className="atlas-map-stage" aria-label="Carte interactive des réalisations parisiennes">
           <div className="map-atmosphere" aria-hidden="true" />
           <DeckGL
             key={viewKey}
@@ -197,36 +195,57 @@ export default function Home() {
             layers={layers}
             getCursor={({ isDragging, isHovering }) => (isDragging ? "grabbing" : isHovering ? "pointer" : "grab")}
             onClick={(info) => {
-              const route = info.object as RouteDatum | undefined;
-              if (route?.id?.startsWith("r-")) setSelectedRoute(route);
+              const feature = info.object as ParisFeature | undefined;
+              if (feature?.properties?.titre_descriptif) setSelectedProject(feature.properties);
             }}
             getTooltip={({ object }) => {
-              const route = object as RouteDatum | undefined;
-              return route?.volume ? { text: `${route.name} · ${route.volume}` } : null;
+              const feature = object as ParisFeature | undefined;
+              if (!feature?.properties?.titre_descriptif) return null;
+              return { text: `${feature.properties.titre_descriptif}\nLivré le ${formatProjectDate(feature.properties.date_liv)}` };
             }}
-          />
+          >
+            <Map initialViewState={INITIAL_VIEW} mapStyle={VECTOR_STYLE} attributionControl={false} reuseMaps style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+              <NavigationControl position="bottom-right" showCompass={false} />
+            </Map>
+          </DeckGL>
 
           <div className="coordinate-corners" aria-hidden="true">
-            <span>48° 58′ N</span><span>02° 20′ E</span><span>SECTEUR 01</span><span>ÉCHELLE VARIABLE</span>
+            <span>48° 58′ N</span><span>02° 20′ E</span><span>PARIS DATA / PST</span><span>FOND VECTORIEL</span>
           </div>
 
           <div className="map-intro intro-animate">
             <p className="eyebrow"><Activity size={14} aria-hidden="true" /> OBSERVATOIRE / 01</p>
-            <h1>Les flux<br /><i>dessinent</i> la ville.</h1>
-            <p>Explorez une lecture instrumentale des mouvements urbains, rendue dans le navigateur par GPU.</p>
+            <h1>Les projets<br /><i>dessinent</i> la ville.</h1>
+            <p>Explorez les réalisations géolocalisées de Paris Data. Choisissez une période, puis sélectionnez un point pour ouvrir son relevé.</p>
           </div>
 
-          <aside className="selected-route-card intro-animate delay-1" aria-live="polite">
-            <p className="eyebrow"><Route size={14} aria-hidden="true" /> TRAJECTOIRE ACTIVE</p>
-            <div className="route-card-main">
-              <div>
-                <h2>{selectedRoute.name}</h2>
-                <p>Observation consolidée</p>
-              </div>
-              <strong>{selectedRoute.volume.split(" ")[0]}<small> K</small></strong>
+          <div className="time-filter intro-animate delay-1" aria-label="Filtrer les réalisations par année de livraison">
+            <div className="time-filter-heading"><CalendarDays size={15} aria-hidden="true" /><span>PÉRIODE DE LIVRAISON</span></div>
+            <div className="time-filter-buttons">
+              <button className={selectedYear === "all" ? "is-selected" : ""} type="button" onClick={() => selectYear("all")}>Toutes</button>
+              {availableYears.map((year) => (
+                <button key={year} className={selectedYear === year ? "is-selected" : ""} type="button" onClick={() => selectYear(year)}>{year}</button>
+              ))}
             </div>
-            <div className="route-progress"><span /></div>
-            <p className="route-card-foot"><span>Intensité</span><b>Élevée</b></p>
+            <p>{isLoading ? "Chargement de la source…" : `${projectFeatures.length} réalisations visibles`}</p>
+          </div>
+
+          <aside className={`node-detail-panel ${selectedProject ? "is-open" : ""}`} aria-live="polite" aria-label="Détails de la réalisation sélectionnée">
+            <button className="detail-close" type="button" onClick={() => setSelectedProject(null)} aria-label="Fermer le panneau de détail"><X size={17} /></button>
+            {selectedProject ? (
+              <>
+                <p className="eyebrow"><MapPin size={14} aria-hidden="true" /> NŒUD SÉLECTIONNÉ</p>
+                <h2>{selectedProject.titre_descriptif}</h2>
+                <div className="detail-category"><span style={{ backgroundColor: `rgb(${categoryColor(selectedProject.categorie).slice(0, 3).join(" ")})` }} /><span>{selectedProject.categorie ?? "Réalisation"}</span></div>
+                <dl className="detail-list">
+                  <div><dt>Livraison</dt><dd>{formatProjectDate(selectedProject.date_liv)}</dd></div>
+                  <div><dt>Adresse</dt><dd>{selectedProject.adresse ?? "Adresse non renseignée"}{selectedProject.code_postal ? `, ${selectedProject.code_postal}` : ""}</dd></div>
+                  {selectedProject.sous_categorie && <div><dt>Type</dt><dd>{selectedProject.sous_categorie}</dd></div>}
+                </dl>
+                {selectedProject.corps_descriptif && <p className="detail-description">{selectedProject.corps_descriptif}</p>}
+                {selectedProject.url_parisfr && <a className="detail-link" href={selectedProject.url_parisfr} target="_blank" rel="noreferrer">Voir la fiche Paris.fr <ExternalLink size={14} aria-hidden="true" /></a>}
+              </>
+            ) : null}
           </aside>
 
           <div className="map-actions intro-animate delay-2">
@@ -235,33 +254,28 @@ export default function Home() {
             </Button>
             <p><MapPin size={13} aria-hidden="true" /> Paris, France</p>
           </div>
+
+          {dataError && <p className="map-data-error" role="status">La source Paris Data n’a pas pu être chargée. Veuillez réessayer plus tard.</p>}
         </section>
 
-        <aside className="atlas-control-rail intro-animate delay-1" aria-label="Calques cartographiques">
+        <aside className="atlas-control-rail intro-animate delay-1" aria-label="Calques et source cartographiques">
           <div className="rail-heading">
-            <p className="eyebrow"><Layers3 size={14} aria-hidden="true" /> CALQUES</p>
-            <span>03</span>
+            <p className="eyebrow"><Layers3 size={14} aria-hidden="true" /> COUCHES</p>
+            <span>02</span>
           </div>
-          <div className="layer-list">
-            {LAYER_OPTIONS.map((layer) => (
-              <button
-                key={layer.id}
-                className={`layer-control ${visibleLayers[layer.id] ? "is-active" : ""}`}
-                type="button"
-                onClick={() => toggleLayer(layer.id)}
-                aria-pressed={visibleLayers[layer.id]}
-              >
-                <span className="layer-indicator" aria-hidden="true" />
-                <span className="layer-copy"><b>{layer.label}</b><small>{layer.note}</small></span>
-              </button>
-            ))}
-          </div>
+          <button className={`layer-control ${projectsVisible ? "is-active" : ""}`} type="button" onClick={() => setProjectsVisible((visible) => !visible)} aria-pressed={projectsVisible}>
+            <span className="layer-indicator" aria-hidden="true" />
+            <span className="layer-copy"><b>Réalisations</b><small>{isLoading ? "lecture…" : `${projects.length} enregistrements`}</small></span>
+            {projectsVisible && <Check size={14} aria-hidden="true" />}
+          </button>
+          <div className="base-layer-note"><span className="base-swatch" aria-hidden="true" /><span><b>Fond vectoriel</b><small>CARTO / Dark Matter</small></span></div>
           <div className="rail-divider" />
-          <div className="map-legend" aria-label="Légende d’intensité">
-            <p>INTENSITÉ</p>
-            <div><span /><span /><span /><span /><span /></div>
-            <small>faible <i>→</i> élevée</small>
+          <div className="data-source-note">
+            <Database size={15} aria-hidden="true" />
+            <div><p>SOURCE DES DONNÉES</p><a href="https://opendata.paris.fr/explore/dataset/parissetransforme/" target="_blank" rel="noreferrer">Paris Data · Paris se transforme <ArrowUpRight size={13} /></a></div>
           </div>
+          <div className="rail-divider compact" />
+          <p className="rail-status"><span /> {yearLabel}</p>
         </aside>
       </main>
 
@@ -269,24 +283,24 @@ export default function Home() {
         <div className="brief-index"><span>02</span><p>NOTE DE<br />TERRAIN</p></div>
         <div className="brief-copy">
           <p className="eyebrow"><Sparkles size={14} aria-hidden="true" /> LECTURE RAPIDE</p>
-          <h2 id="brief-title">Une carte conçue pour <i>isoler</i> le signal.</h2>
-          <p className="serif-text">Cette démonstration emploie des données illustratives afin de présenter trois capacités centrales : la composition de calques, la sélection d’une trajectoire et l’exploration fluide d’un jeu de positions géographiques.</p>
-          <a href="https://github.com/visgl/deck.gl" target="_blank" rel="noreferrer">Voir le dépôt officiel <ArrowUpRight size={15} aria-hidden="true" /></a>
+          <h2 id="brief-title">Une carte conçue pour <i>interroger</i> le réel.</h2>
+          <p className="serif-text">Les points affichés proviennent du jeu public « Paris se transforme ». Chaque réalisation comporte une localisation, une catégorie et, lorsqu’elle est renseignée, une date de livraison qui alimente les filtres temporels de la carte.</p>
+          <a href="https://opendata.paris.fr/explore/dataset/parissetransforme/" target="_blank" rel="noreferrer">Consulter la source des données <ArrowUpRight size={15} aria-hidden="true" /></a>
         </div>
         <div className="brief-visual" aria-hidden="true">
           <img src="/manus-storage/atlas-flux-terrain_c2d818b9.png" alt="" />
-          <div className="visual-caption"><span>COUCHE / TOPO</span><span>01:24000</span></div>
+          <div className="visual-caption"><span>COUCHE / PARIS DATA</span><span>GEOJSON</span></div>
         </div>
         <div className="brief-metrics">
-          <article><strong>03</strong><span>trajectoires<br />analysées</span></article>
-          <article><strong>04</strong><span>nœuds<br />d’activité</span></article>
-          <article><strong>60</strong><span>ips de rendu<br />ciblées</span></article>
+          <article><strong>{String(projectFeatures.length).padStart(2, "0")}</strong><span>réalisations<br />filtrées</span></article>
+          <article><strong>{String(availableYears.length).padStart(2, "0")}</strong><span>années de<br />livraison</span></article>
+          <article><strong>01</strong><span>source GeoJSON<br />publique</span></article>
         </div>
       </section>
 
       <footer className="atlas-footer">
-        <div><Crosshair size={16} aria-hidden="true" /> <span>ATLAS FLUX / DÉMONSTRATEUR</span></div>
-        <p>Données illustratives · Interface de démonstration</p>
+        <div><Crosshair size={16} aria-hidden="true" /> <span>ATLAS FLUX / OBSERVATOIRE</span></div>
+        <p>Données : Ville de Paris · « Paris se transforme »</p>
         <img src="/manus-storage/atlas-flux-route_f9e9cd02.png" alt="Aperçu cartographique décoratif" />
       </footer>
     </div>

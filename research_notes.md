@@ -10,3 +10,13 @@ Consultation effectuée le 26 août 2026.
 ## Décision d’implémentation
 
 Le site utilisera **`@deck.gl/react`** pour le composant de rendu et **`@deck.gl/layers`** pour les calques de données. La première démonstration restera volontairement autonome, sans dépendance à un fournisseur de fond de carte : cette configuration est explicitement prise en charge par deck.gl et évite l’utilisation d’une clé tierce. Les données affichées sont une petite série de trajectoires illustratives, étiquetées comme telles dans l’interface.
+
+## Mise à jour — sources pour les données et le fond vectoriel
+
+| Source | Point confirmé | Décision |
+| --- | --- | --- |
+| [Paris Data — Paris se transforme](https://opendata.paris.fr/explore/dataset/parissetransforme/) | Le jeu officiel recense des réalisations de la Ville de Paris avec des informations d’adresse et de catégorie. | Utiliser cette source pour remplacer les nœuds illustratifs. |
+| [API Open Data Paris — enregistrements datés](https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/parissetransforme/records?limit=5&where=date_liv%20is%20not%20null) | L’API fournit une géométrie ponctuelle, un libellé, une catégorie, une adresse et `date_liv`. La requête identifie 593 enregistrements avec une date de livraison. | Charger ces enregistrements à la demande et filtrer leurs années de livraison dans le navigateur. |
+| [visgl/react-map-gl](https://github.com/visgl/react-map-gl) | Le dépôt officiel indique l’installation de `react-map-gl` et `maplibre-gl` pour l’adaptateur MapLibre. | Ajouter ces paquets et afficher un style vectoriel public sans clé en arrière-plan. |
+
+L’application présentera explicitement les données comme issues de **Paris Data**, avec un lien vers la fiche du jeu. Aucun indicateur de volume ne sera présenté comme une mesure de fréquentation : les métriques du panneau seront dérivées uniquement de propriétés disponibles, notamment la date de livraison et la catégorie.
