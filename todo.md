@@ -1,5 +1,11 @@
 # Mise à jour Atlas Flux
 
+## Correctif de rendu deck.gl
+
+- [x] Lire les documents de classification et de calques transmis.
+- [x] Identifier la propriété incompatible lors de l’initialisation de `ScatterplotLayer`.
+- [x] Corriger les couches mondiales et vérifier les interactions.
+
 ## Refonte géopolitique mondiale
 
 - [x] Sélectionner des indicateurs géopolitiques mondiaux et des sources publiques fiables.

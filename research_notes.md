@@ -30,3 +30,16 @@ L’application présentera explicitement les données comme issues de **Paris D
 | Effort de défense | Dépenses militaires, part du PIB (`MS.MIL.XPND.GD.ZS`) | [Banque mondiale / SIPRI](https://data.worldbank.org/indicator/MS.MIL.XPND.GD.ZS) | Couche spécifique, présentée comme un pourcentage du PIB et non comme un niveau de dépenses. |
 
 La [documentation de l’API des indicateurs](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation) confirme l’accès programmatique sans clé et l’utilisation de l’API V2. L’application chargera les données nationales et leurs coordonnées de capitales depuis cette API. Les vues initiales seront **Monde**, **Europe**, **Amériques**, **Indo-Pacifique** et **Afrique–Moyen-Orient** ; les filtres seront **année** et **région**. Ces données sont des indicateurs descriptifs et ne constituent pas une évaluation du risque ou une prévision géopolitique.
+
+## Documents fonctionnels transmis — 26 août 2026
+
+| Document | Exigences à retenir pour Atlas Flux |
+| --- | --- |
+| **Système de classification** | La structure cible doit permettre de naviguer par échelle spatiale, typologie de lien, période et statut international. Un pays sélectionné doit conduire à un panneau contextuel ; les relations devront représenter leur type, direction et temporalité. |
+| **Calques et filtre carte** | Le MVP visuel recommandé associe une vue mondiale, un fond sombre, des pays cliquables, des liens représentés par arcs et des icônes. Le document prévoit ensuite une timeline GPU, des calques de relations, des organisations et un mécanisme de contribution lorsqu’une relation est absente. |
+
+Le correctif immédiat porte uniquement sur l’initialisation de la couche de points. Les capacités de relations typées, d’organisations et de contribution seront des évolutions distinctes, afin de ne pas présenter de liens non sourcés comme des faits.
+
+### Diagnostic du correctif deck.gl
+
+L’assertion levée dans l’initialisation de `ScatterplotLayer` vérifie qu’une instance de calque n’a pas déjà été initialisée. La carte était recréée lors du changement de vue, mais le mémo React pouvait lui transmettre les mêmes instances de calques. La dépendance de mémoïsation inclut désormais la clé de vue : chaque recréation de carte reçoit donc de nouvelles instances de `ScatterplotLayer`.

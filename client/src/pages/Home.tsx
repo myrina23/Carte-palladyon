@@ -238,7 +238,7 @@ export default function Home() {
       highlightColor: [255, 237, 186, 180],
       updateTriggers: { getRadius: activeYear },
     })),
-    [activeYear, filteredCountries, visibleLayers],
+    [activeYear, filteredCountries, visibleLayers, viewKey],
   );
 
   function selectView(view: ViewConfig) {
