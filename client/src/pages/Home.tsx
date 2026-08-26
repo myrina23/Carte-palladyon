@@ -117,8 +117,25 @@ type SavedSnapshot = { name: string; createdAt: string; regions: RegionId[]; org
 
 const INDICATOR_YEARS = [2024, 2023, 2022] as const;
 const GRAVITY_FILTERS = [{ value: 0, label: "Tous" }, { value: 500, label: "500+" }, { value: 2000, label: "2 k+" }, { value: 10000, label: "10 k+" }];
-const VECTOR_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const LIGHT_VECTOR_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+const ATLAS_DARK_VECTOR_STYLE = {
+  version: 8,
+  layers: [
+    { id: "atlas-night", type: "background", paint: { "background-color": "#071424" } },
+  ],
+} as const;
+const ATLAS_LIGHT_VECTOR_STYLE = {
+  version: 8,
+  layers: [
+    { id: "atlas-day", type: "background", paint: { "background-color": "#e9f3f7" } },
+  ],
+} as const;
+const ATLAS_CONTINENT_LABELS = [
+  { label: "AMÉRIQUES", position: [-88, 17] as [number, number] },
+  { label: "EUROPE", position: [16, 51] as [number, number] },
+  { label: "AFRIQUE", position: [20, 5] as [number, number] },
+  { label: "ASIE", position: [96, 35] as [number, number] },
+  { label: "OCÉANIE", position: [140, -25] as [number, number] },
+];
 const WORLD_BANK_API = "https://api.worldbank.org/v2";
 const WORLD_BOUNDARIES = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson";
 const WORLD_MAP_UNITS = "/manus-storage/ne_10m_admin_0_map_units_26e71358.geojson";
@@ -636,6 +653,29 @@ export default function Home() {
   const conflictSignals = useMemo<UcdpConflictCell[]>(() => UCDP_CONFLICT_CELLS.filter((cell) => (analysisMode === "evolution" ? cell.year >= evolutionStart && cell.year <= evolutionEnd : cell.year === timelineYear) && cell.fatalities >= gravityThreshold && (activeRegion === "all" || conflictCellRegion(cell.position) === activeRegion)), [activeRegion, analysisMode, evolutionEnd, evolutionStart, gravityThreshold, timelineYear]);
 
   const layers = useMemo(() => {
+    const atlasLandLayer = displayMode !== "globe" && boundaries ? new GeoJsonLayer({
+      id: `atlas-land-mass-${viewKey}`,
+      data: boundaries,
+      stroked: true,
+      filled: true,
+      pickable: false,
+      getFillColor: [26, 59, 91, 114],
+      getLineColor: [101, 151, 183, 120],
+      getLineWidth: 0.7,
+      lineWidthUnits: "pixels",
+    }) : null;
+    const atlasLabelLayer = displayMode !== "globe" ? new TextLayer({
+      id: `atlas-continent-labels-${viewKey}`,
+      data: ATLAS_CONTINENT_LABELS,
+      getPosition: (entry) => entry.position,
+      getText: (entry) => entry.label,
+      getSize: 12,
+      sizeUnits: "pixels",
+      getColor: [137, 181, 206, 145],
+      getTextAnchor: "middle",
+      getAlignmentBaseline: "center",
+      pickable: false,
+    }) : null;
     const boundaryLayer = displayMode === "globe" ? new GeoJsonLayer({
       id: `world-boundaries-${viewKey}`,
       data: boundaries ?? { type: "FeatureCollection", features: [] },
@@ -686,6 +726,40 @@ export default function Home() {
       lineWidthUnits: "pixels",
     }) : null;
     const pulse = Math.round(130 + ((Math.sin(animationPhase / 3) + 1) / 2) * 110);
+    const relationCyanAuraLayer = new ArcLayer<Relation>({
+      id: `geopolitical-arcs-cyan-aura-${viewKey}`,
+      data: activeRelations,
+      greatCircle: true,
+      getSourcePosition: (relation) => relation.source.position,
+      getTargetPosition: (relation) => relation.target.position,
+      getSourceColor: [32, 196, 217, 34],
+      getTargetColor: [32, 196, 217, 8],
+      getWidth: (relation) => selectedActorId && (relation.source.id === selectedActorId || relation.target.id === selectedActorId) ? 9 : 6.5,
+      widthUnits: "pixels",
+      pickable: false,
+    });
+    const relationGlowLayer = new ArcLayer<Relation>({
+      id: `geopolitical-arcs-glow-${viewKey}`,
+      data: activeRelations,
+      greatCircle: true,
+      getSourcePosition: (relation) => relation.source.position,
+      getTargetPosition: (relation) => relation.target.position,
+      getSourceColor: (relation) => [...(analysisMode === "evolution" ? evolutionColor(evolutionRelationState[relation.id], evolutionEmphasis, relation.type) : relationColor(relation.type)), 30] as [number, number, number, number],
+      getTargetColor: (relation) => [...(analysisMode === "evolution" ? evolutionColor(evolutionRelationState[relation.id], evolutionEmphasis, relation.type) : relationColor(relation.type)), 12] as [number, number, number, number],
+      getWidth: (relation) => selectedActorId && (relation.source.id === selectedActorId || relation.target.id === selectedActorId) ? 6 : 4.25,
+      widthUnits: "pixels",
+      pickable: false,
+    });
+    const relationNodeAuraLayer = new ScatterplotLayer<RelationActor>({
+      id: `relation-node-aura-${viewKey}`,
+      data: activeRelations.flatMap((relation) => [relation.source, relation.target]),
+      getPosition: (actor) => actor.position,
+      getRadius: 11,
+      radiusUnits: "pixels",
+      getFillColor: [32, 196, 217, 54],
+      getLineColor: [32, 196, 217, 0],
+      pickable: false,
+    });
     const relationLayer = new ArcLayer<Relation>({
       id: `geopolitical-arcs-${viewKey}`,
       data: activeRelations,
@@ -766,7 +840,7 @@ export default function Home() {
       autoHighlight: true,
       highlightColor: [255, 237, 186, 170],
     });
-    return [...(boundaryLayer ? [boundaryLayer] : []), ...(countryClickLayer ? [countryClickLayer] : []), ...(selectionLayer ? [selectionLayer] : []), ...(conflictHeatLayer ? [conflictHeatLayer] : []), ...(conflictCellLayer ? [conflictCellLayer] : []), territoryMarkerLayer, relationLayer, ...(directionLayer ? [directionLayer] : []), organizationLayer];
+    return [...(atlasLandLayer ? [atlasLandLayer] : []), ...(atlasLabelLayer ? [atlasLabelLayer] : []), ...(boundaryLayer ? [boundaryLayer] : []), ...(countryClickLayer ? [countryClickLayer] : []), ...(selectionLayer ? [selectionLayer] : []), ...(conflictHeatLayer ? [conflictHeatLayer] : []), ...(conflictCellLayer ? [conflictCellLayer] : []), territoryMarkerLayer, relationCyanAuraLayer, relationGlowLayer, relationNodeAuraLayer, relationLayer, ...(directionLayer ? [directionLayer] : []), organizationLayer];
   }, [activeRelations, allCountries, analysisMode, animationPhase, boundaries, compareLeftId, compareRightId, conflictSignals, displayMode, evolutionEmphasis, evolutionRelationState, isComparatorOpen, mapUnits, relatedActorIds, selectedActorId, selectedZone, showConflictHeat, territoryActors, viewKey]);
 
   function resetView() {
@@ -1136,14 +1210,14 @@ export default function Home() {
               if (country.iso3) selectCountryFromMap(country);
             }}
           >
-            {displayMode !== "globe" && <Map key={`map-${viewKey}-${displayMode}-${theme}`} ref={mapRef} initialViewState={{ ...projectionView, pitch: displayMode === "tactical" ? 58 : 0, bearing: displayMode === "tactical" ? -14 : 0 } as any} mapStyle={theme === "light" ? LIGHT_VECTOR_STYLE : VECTOR_STYLE} attributionControl={false} canvasContextAttributes={{ preserveDrawingBuffer: true }} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}><NavigationControl position="bottom-right" showCompass={displayMode === "tactical"} /></Map>}
+            {displayMode !== "globe" && <Map key={`map-${viewKey}-${displayMode}-${theme}`} ref={mapRef} initialViewState={{ ...projectionView, pitch: displayMode === "tactical" ? 58 : 0, bearing: displayMode === "tactical" ? -14 : 0 } as any} mapStyle={(theme === "light" ? ATLAS_LIGHT_VECTOR_STYLE : ATLAS_DARK_VECTOR_STYLE) as any} attributionControl={false} canvasContextAttributes={{ preserveDrawingBuffer: true }} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}><NavigationControl position="bottom-right" showCompass={displayMode === "tactical"} /></Map>}
           </DeckGL>
 
           {isSplitComparison && <section className="split-comparison-overlay" aria-label={`Comparaison cartographique synchronisée ${evolutionStart} et ${evolutionEnd}`}>
             <header><div><p><GitCompareArrows size={15} aria-hidden="true" /> CARTE COMPARATIVE SYNCHRONISÉE</p><strong>{evolutionStart} <span>↔</span> {evolutionEnd}</strong></div><button type="button" onClick={() => setIsSplitComparison(false)} aria-label="Fermer la comparaison cartographique"><X size={18} /></button></header>
             <div className="split-map-grid">
-              <article><div className="split-map-caption"><span>A · {evolutionStart}</span><small>{evolutionStartRelations.length} liens à cette date</small></div><DeckGL controller viewState={splitViewState as any} onViewStateChange={({ viewState }) => { const state = viewState as any; setSplitViewState({ longitude: state.longitude, latitude: state.latitude, zoom: state.zoom, bearing: state.bearing ?? 0, pitch: state.pitch ?? 0 }); }} layers={splitStartLayers} getTooltip={(info) => info.object ? { text: tooltipFor(info.object, info.layer?.id) } : null}><Map initialViewState={splitViewState as any} mapStyle={theme === "light" ? LIGHT_VECTOR_STYLE : VECTOR_STYLE} attributionControl={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} /></DeckGL></article>
-              <article><div className="split-map-caption"><span>B · {evolutionEnd}</span><small>{evolutionEndRelations.length} liens à cette date</small></div><DeckGL controller viewState={splitViewState as any} onViewStateChange={({ viewState }) => { const state = viewState as any; setSplitViewState({ longitude: state.longitude, latitude: state.latitude, zoom: state.zoom, bearing: state.bearing ?? 0, pitch: state.pitch ?? 0 }); }} layers={splitEndLayers} getTooltip={(info) => info.object ? { text: tooltipFor(info.object, info.layer?.id) } : null}><Map initialViewState={splitViewState as any} mapStyle={theme === "light" ? LIGHT_VECTOR_STYLE : VECTOR_STYLE} attributionControl={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} /></DeckGL></article>
+              <article><div className="split-map-caption"><span>A · {evolutionStart}</span><small>{evolutionStartRelations.length} liens à cette date</small></div><DeckGL controller viewState={splitViewState as any} onViewStateChange={({ viewState }) => { const state = viewState as any; setSplitViewState({ longitude: state.longitude, latitude: state.latitude, zoom: state.zoom, bearing: state.bearing ?? 0, pitch: state.pitch ?? 0 }); }} layers={splitStartLayers} getTooltip={(info) => info.object ? { text: tooltipFor(info.object, info.layer?.id) } : null}><Map initialViewState={splitViewState as any} mapStyle={(theme === "light" ? ATLAS_LIGHT_VECTOR_STYLE : ATLAS_DARK_VECTOR_STYLE) as any} attributionControl={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} /></DeckGL></article>
+              <article><div className="split-map-caption"><span>B · {evolutionEnd}</span><small>{evolutionEndRelations.length} liens à cette date</small></div><DeckGL controller viewState={splitViewState as any} onViewStateChange={({ viewState }) => { const state = viewState as any; setSplitViewState({ longitude: state.longitude, latitude: state.latitude, zoom: state.zoom, bearing: state.bearing ?? 0, pitch: state.pitch ?? 0 }); }} layers={splitEndLayers} getTooltip={(info) => info.object ? { text: tooltipFor(info.object, info.layer?.id) } : null}><Map initialViewState={splitViewState as any} mapStyle={(theme === "light" ? ATLAS_LIGHT_VECTOR_STYLE : ATLAS_DARK_VECTOR_STYLE) as any} attributionControl={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} /></DeckGL></article>
             </div>
             <footer><span><i className="is-persistent" /> Continus : {evolutionCounts.persistent}</span><span><i className="is-appeared" /> Apparitions : {evolutionCounts.appeared}</span><span><i className="is-ended" /> Sorties : {evolutionCounts.ended}</span><small>Déplacer ou zoomer une carte pour synchroniser l’autre.</small></footer>
           </section>}

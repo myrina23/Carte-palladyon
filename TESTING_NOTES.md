@@ -49,3 +49,12 @@
 | Mobile 375 × 812 | Filtres ouverts avec actions cartographiques | Les groupes restent lisibles et espacés ; la commande œil reste accessible pour replier le panneau. |
 | Repli réversible | Exécution navigateur sur `.map-filter-visibility-toggle` | Le clic applique `filters-hidden`, rend le panneau à `opacity: 0` et `pointer-events: none` tout en conservant l’œil visible ; le second clic retire la classe et restaure les interactions. |
 | Repli mobile responsive | Contrôle Chromium CDP à 375 × 812 | État initial : opacité `1` et interactions actives. Après clic : `filtersHidden: true`, opacité `0`, interactions désactivées et œil visible. Après second clic : opacité `1`, interactions actives et œil toujours visible. |
+
+## Refonte nocturne Apple-style
+
+| Format | Vérification | Résultat |
+| --- | --- | --- |
+| Bureau 1440 × 900 | Carte Atlas Flux, flux et surfaces superposées | Le style MapLibre Atlas Flux repose désormais sur un fond sans raster tiers, complété d’un continent Natural Earth bleu ardoise, de frontières fines et de repères continentaux. Les flux ont un halo cyan dédié sous leur trait de typologie. Les commandes restent compactes, arrondies et floutées. |
+| Mobile 375 × 812 | Panneau de filtres et timeline | La surface conserve un flou de verre dépoli, ses séparateurs faibles et ses contrôles arrondis sans perte de lisibilité ou de l’œil indépendant. La carte conserve son fond nocturne, ses flux cyan et son contraste sous le panneau. |
+| Correspondance de référence | Revue des captures bureau et mobile | Les attributs demandés sont explicitement présents : scène nocturne bleu ardoise, contours continentaux discrets, flux cyan lumineux, cœur d’arc sémantique, surfaces translucides fortement floutées et densité de contrôles réduite. |
+| Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **13 tests Vitest** validés après la couche de continents, les repères et les halos cyan. |

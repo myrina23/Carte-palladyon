@@ -68,6 +68,14 @@
 - [x] Préserver le contraste des textes et des actions sur carte sombre et claire.
 - [x] Vérifier explicitement le repli et la réapparition du panneau de filtres avec le nouveau style verre fumé dans une session mobile responsive.
 
+## Refonte nocturne Apple-style
+
+- [x] Personnaliser la scène cartographique Atlas Flux au-delà du style Carto générique : fond MapLibre dédié, continents Natural Earth et repères rendus par deck.gl.
+- [x] Ajouter un halo cyan focalisé derrière les arcs et nœuds tout en conservant le trait sémantique par typologie.
+- [x] Réduire les surfaces massives et adopter des panneaux compacts, très floutés et translucides inspirés du langage Apple.
+- [x] Ajuster la densité, les rayons, les ombres et les contrôles pour une interface cartographique plus contemporaine.
+- [x] Documenter explicitement la correspondance de la scène bureau/mobile avec les attributs observables de la référence, sans perdre les affordances existantes.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.
