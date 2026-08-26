@@ -53,9 +53,9 @@
 }
 
 .world-view-list button.is-active {
-  border-color: rgb(255 107 53 / 65%);
-  background: rgb(255 107 53 / 10%);
-  color: #ffb495;
+  border-color: rgb(0 140 149 / 72%);
+  background: rgb(0 140 149 / 12%);
+  color: #a6e8e5;
 }
 
 .world-view-list span {
@@ -122,6 +122,9 @@
 }
 
 .world-map-stage .maplibregl-ctrl-group button span { filter: invert(1) brightness(2); }
+
+.world-map-stage .deck-canvas { cursor: grab; }
+.world-map-stage .deck-canvas:active { cursor: grabbing; }
 
 .world-map-stage::after {
   position: absolute;
@@ -222,7 +225,7 @@
 .filter-pills { display: flex; flex-wrap: wrap; gap: 0.36rem; }
 .filter-pills button { min-width: 43px; padding: 0.38rem 0.44rem; border: 1px solid rgb(231 238 223 / 16%); color: #9eb1ae; font-size: 0.64rem; line-height: 1; transition: color 160ms cubic-bezier(0.23, 1, 0.32, 1), border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), background 160ms cubic-bezier(0.23, 1, 0.32, 1); }
 .filter-pills button:hover { color: #f6f0e5; border-color: #f2c24e; }
-.filter-pills button.is-selected { color: #101a24; border-color: #ff6b35; background: #ff6b35; font-weight: 700; }
+.filter-pills button.is-selected { color: #fbf7f0; border-color: #008c95; background: #008c95; font-weight: 700; }
 .region-pills button { min-width: auto; }
 .filter-status { margin: 0.9rem 0 0; color: #78908d; font-size: 0.61rem; }
 
@@ -271,6 +274,15 @@
 
 @media (max-width: 680px) {
   .world-observatory { min-height: 650px; }.world-view-rail { min-height: 62px; padding: 0.65rem 0.8rem; overflow-x: auto; }.world-rail-heading { display: none; }.world-view-list { width: 100%; margin: 0; }.world-view-list button { flex: 1; padding: 0.42rem 0.24rem; }.world-view-list span { font-size: 0.48rem; }.world-map-stage { min-height: 650px; }.world-grid-labels { top: 0.9rem; right: 1rem; left: 1rem; }.world-grid-labels span:nth-child(2) { display: none; }.world-grid-labels small { bottom: -605px; }.world-intro { top: 13%; left: 1.2rem; right: 1.2rem; }.world-intro h1 { font-size: 3.25rem; }.world-intro > p:last-child { max-width: 280px; font-size: 0.93rem; }.world-filter-panel { top: auto; right: 1rem; bottom: 5.8rem; left: 1rem; width: auto; padding: 0.75rem 0.85rem; }.world-filter-title { font-size: 0.54rem; }.filter-group { margin-top: 0.62rem; }.filter-group > p { display: none; }.filter-pills { gap: 0.28rem; }.filter-pills button { min-width: 37px; padding: 0.32rem 0.35rem; font-size: 0.58rem; }.filter-status { display: none; }.world-filter-panel:has(~ .world-detail-panel.is-open), .world-layer-panel:has(~ .world-detail-panel.is-open), .world-map-actions:has(~ .world-detail-panel.is-open) { opacity: 0; pointer-events: none; }.world-layer-panel { display: flex; right: 3.15rem; bottom: 0.8rem; left: 9.6rem; width: auto; align-items: center; justify-content: space-around; gap: 0.3rem; padding: 0.42rem 0.5rem; }.world-layer-panel .layer-panel-heading { display: none; }.world-layer-button { display: flex; width: auto; flex: 1; justify-content: center; gap: 0.3rem; padding: 0.22rem; border: 0; }.world-layer-button:hover { padding-left: 0.22rem; }.world-layer-button > span:nth-child(2), .world-layer-button > svg { display: none; }.world-layer-button::after { content: attr(data-layer); color: currentColor; font-size: 0.56rem; font-weight: 700; letter-spacing: 0.06em; }.world-layer-dot { width: 7px; height: 7px; }.world-detail-panel { top: auto; right: 1rem; bottom: 0.85rem; left: 1rem; width: auto; max-height: 500px; transform: translateY(16px); }.world-detail-panel.is-open { transform: translateY(0); }.world-map-actions { bottom: 1.4rem; left: 1.2rem; }.world-map-actions p { display: none; }.world-brief { grid-template-columns: 1fr; gap: 2rem; padding: 3.5rem 1.25rem; }.world-brief-index { min-height: auto; flex-direction: row; align-items: center; padding-bottom: 1.1rem; border-right: 0; border-bottom: 1px solid rgb(20 34 44 / 20%); }.world-brief-copy h2 { font-size: 2.9rem; }.world-method { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; padding: 1.2rem 0 0; border-top: 1px solid rgb(20 34 44 / 20%); border-left: 0; }.world-method article { display: block; }.world-method strong { display: block; font-size: 1.7rem; }.world-method span { font-size: 0.6rem; }.world-map-stage .maplibregl-ctrl-bottom-right { right: 0.75rem; bottom: 4rem; }
+}
+
+/* Atlas Flux — les commandes cartographiques prioritaires conservent une cible tactile de 44 px sur mobile. */
+@media (max-width: 680px) {
+  .world-view-rail { min-height: 76px; }
+  .world-view-list button { min-height: 44px; }
+  .filter-pills button { min-width: 44px; min-height: 44px; }
+  .world-layer-button { min-height: 44px; }
+  .world-map-stage .maplibregl-ctrl-group button { width: 44px; height: 44px; }
 }
 
 /* Atlas Flux — hiérarchie carte-first, repères de calibration et rapport de terrain. */

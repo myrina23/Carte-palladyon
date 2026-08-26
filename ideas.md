@@ -76,3 +76,6 @@ Le mot-symbole utilise des capitales compactes espacées, accompagnées d’une 
 * La rose des vents Atlas Flux devient un repère d’activation répété dans les panneaux, sélections et balises de relevé, au-delà du seul logotype.
 * Les actions restent en français observationnel : elles proposent de recentrer, comparer ou produire un relevé, plutôt que d’employer des libellés utilitaires génériques.
 * La carte conserve la priorité visuelle ; textes et contrôles doivent se lire comme des annotations instrumentales posées sur le territoire.
+* Les contrôles doivent expliquer leur usage par leur forme, leur placement, une icône familière et un état perceptible ; les précisions secondaires apparaissent au survol ou à la demande, jamais dans un tutoriel bloquant.
+* La palette est sémantique : teal pour l’activation, cyan pour les flux, lilas pour le contexte, jaune pour le repère et corail uniquement pour le risque, la gravité ou une action irréversible.
+* Les interactions reprennent les conventions cartographiques habituelles — clic de sélection, glisser-déposer de déplacement, zoom à la molette ou au pincement, curseur temporel — afin de réduire toute charge d’apprentissage.

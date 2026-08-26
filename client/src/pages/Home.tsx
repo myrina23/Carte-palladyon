@@ -99,27 +99,27 @@ const WORLD_BANK_API = "https://api.worldbank.org/v2";
 const WORLD_BOUNDARIES = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson";
 
 const INDICATORS: Array<{ id: IndicatorId; label: string; compact: string; sourceLabel: string; apiCode: string; color: [number, number, number, number] }> = [
-  { id: "gdp", label: "Puissance économique", compact: "PIB", sourceLabel: "PIB, dollars courants", apiCode: "NY.GDP.MKTP.CD", color: [89, 151, 146, 214] },
-  { id: "population", label: "Démographie", compact: "POP", sourceLabel: "Population totale", apiCode: "SP.POP.TOTL", color: [224, 188, 106, 210] },
-  { id: "defense", label: "Effort de défense", compact: "DEF", sourceLabel: "Dépenses militaires (% PIB)", apiCode: "MS.MIL.XPND.GD.ZS", color: [255, 107, 53, 230] },
+  { id: "gdp", label: "Puissance économique", compact: "PIB", sourceLabel: "PIB, dollars courants", apiCode: "NY.GDP.MKTP.CD", color: [0, 140, 149, 214] },
+  { id: "population", label: "Démographie", compact: "POP", sourceLabel: "Population totale", apiCode: "SP.POP.TOTL", color: [242, 193, 78, 210] },
+  { id: "defense", label: "Effort de défense", compact: "DEF", sourceLabel: "Dépenses militaires (% PIB)", apiCode: "MS.MIL.XPND.GD.ZS", color: [139, 122, 200, 230] },
 ];
 
 const RELATION_TYPES: Array<{ id: RelationType; label: string; short: string; color: [number, number, number] }> = [
-  { id: "geopolitique", label: "Géopolitique", short: "GÉO", color: [255, 107, 53] },
-  { id: "militaire", label: "Militaire", short: "MIL", color: [239, 86, 78] },
-  { id: "economique", label: "Économique", short: "ÉCO", color: [242, 194, 78] },
-  { id: "commercial", label: "Commercial", short: "COM", color: [80, 175, 202] },
-  { id: "technologique", label: "Technologique", short: "TEC", color: [96, 139, 235] },
-  { id: "scientifique", label: "Scientifique", short: "SCI", color: [122, 191, 165] },
-  { id: "culturel", label: "Culturel", short: "CUL", color: [205, 141, 186] },
-  { id: "historique", label: "Historique", short: "HIS", color: [165, 117, 236] },
-  { id: "migratoire", label: "Migratoire", short: "MIG", color: [99, 190, 197] },
-  { id: "ressources", label: "Ressources", short: "RES", color: [208, 163, 90] },
-  { id: "securitaire", label: "Sécuritaire", short: "SÉC", color: [234, 91, 91] },
-  { id: "ideologique", label: "Idéologique", short: "IDÉ", color: [191, 117, 214] },
-  { id: "financier", label: "Financier", short: "FIN", color: [151, 203, 105] },
-  { id: "numerique", label: "Numérique", short: "NUM", color: [88, 144, 215] },
-  { id: "juridique", label: "Juridique", short: "JUR", color: [163, 177, 187] },
+  { id: "geopolitique", label: "Géopolitique", short: "GÉO", color: [32, 196, 217] },
+  { id: "militaire", label: "Militaire", short: "MIL", color: [217, 93, 78] },
+  { id: "economique", label: "Économique", short: "ÉCO", color: [0, 140, 149] },
+  { id: "commercial", label: "Commercial", short: "COM", color: [32, 196, 217] },
+  { id: "technologique", label: "Technologique", short: "TEC", color: [139, 122, 200] },
+  { id: "scientifique", label: "Scientifique", short: "SCI", color: [0, 140, 149] },
+  { id: "culturel", label: "Culturel", short: "CUL", color: [242, 193, 78] },
+  { id: "historique", label: "Historique", short: "HIS", color: [139, 122, 200] },
+  { id: "migratoire", label: "Migratoire", short: "MIG", color: [32, 196, 217] },
+  { id: "ressources", label: "Ressources", short: "RES", color: [242, 193, 78] },
+  { id: "securitaire", label: "Sécuritaire", short: "SÉC", color: [217, 93, 78] },
+  { id: "ideologique", label: "Idéologique", short: "IDÉ", color: [139, 122, 200] },
+  { id: "financier", label: "Financier", short: "FIN", color: [0, 140, 149] },
+  { id: "numerique", label: "Numérique", short: "NUM", color: [32, 196, 217] },
+  { id: "juridique", label: "Juridique", short: "JUR", color: [0, 140, 149] },
 ];
 
 const VIEWS: ViewConfig[] = [
@@ -636,7 +636,7 @@ export default function Home() {
       <main id="observatoire" className="world-observatory">
         <aside className="world-view-rail" aria-label="Vues cartographiques">
           <div className="world-rail-heading"><Globe2 size={16} aria-hidden="true" /><span>VUES</span></div>
-          <div className="display-mode-switch" aria-label="Mode de projection"><button type="button" className={displayMode === "map" ? "is-active" : ""} onClick={() => toggleDisplayMode("map")}>2D</button><button type="button" className={displayMode === "globe" ? "is-active" : ""} onClick={() => toggleDisplayMode("globe")}>GLOBE</button><button type="button" className={displayMode === "tactical" ? "is-active" : ""} onClick={() => toggleDisplayMode("tactical")}>TAC</button></div>
+          <div className="display-mode-switch" aria-label="Mode de projection"><button type="button" title="Carte plane : déplacer et zoomer selon les conventions cartographiques" aria-pressed={displayMode === "map"} className={displayMode === "map" ? "is-active" : ""} onClick={() => toggleDisplayMode("map")}>2D</button><button type="button" title="Globe : examiner les relations à l’échelle mondiale" aria-pressed={displayMode === "globe"} className={displayMode === "globe" ? "is-active" : ""} onClick={() => toggleDisplayMode("globe")}>GLOBE</button><button type="button" title="Vue tactique : incliner la carte pour observer une zone de près" aria-pressed={displayMode === "tactical"} className={displayMode === "tactical" ? "is-active" : ""} onClick={() => toggleDisplayMode("tactical")}>TAC</button></div>
           <div className="world-view-list">
             {VIEWS.map((view) => <button key={view.id} className={activeView === view.id && !focusView ? "is-active" : ""} type="button" onClick={() => selectView(view)} aria-pressed={activeView === view.id && !focusView}><span>{view.short}</span><i>{view.label}</i></button>)}
           </div>
@@ -688,7 +688,7 @@ export default function Home() {
 
           <aside className={`bilateral-comparator ${isComparatorOpen ? "is-open" : ""}`} aria-label="Comparateur bilatéral"><button className="detail-close" type="button" onClick={() => setIsComparatorOpen(false)} aria-label="Fermer le comparateur"><X size={17} /></button><p className="eyebrow"><GitCompareArrows size={14} aria-hidden="true" /> COMPARATEUR BILATÉRAL</p><h3>Deux pays,<br /><i>une relation</i>.</h3><div className="comparator-selects"><label><span>PAYS A</span><select value={compareLeftId} onChange={(event) => setCompareLeftId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label><span className="compare-arrow">↔</span><label><span>PAYS B</span><select value={compareRightId} onChange={(event) => setCompareRightId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label></div><section className="comparison-history" aria-label="Évolution historique des relations"><div className="comparison-history-heading"><Activity size={14} /><span>ÉVOLUTION HISTORIQUE</span><b>{historyStart} — 2025</b></div>{bilateralHistory.length ? <div className="history-lines">{bilateralHistory.map((relation) => <div className="history-line" key={relation.id}><span>{relation.type}</span><div className="history-track"><i style={{ left: `${((relation.start - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%`, width: `${(((relation.end ?? 2025) - relation.start) / Math.max(1, 2025 - historyStart)) * 100}%`, backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><em style={{ left: `${((timelineYear - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%` }} /></div></div>)}</div> : <div className="comparison-empty">Aucune évolution relationnelle renseignée dans ce corpus pour cette paire.</div>}</section><div className="comparison-summary"><p>{compareLeft?.name ?? "Pays A"}<span>↔</span>{compareRight?.name ?? "Pays B"}</p>{bilateralRelations.length > 0 ? bilateralRelations.map((relation) => { const reference = relationReference(relation); return <article key={relation.id}><i style={{ backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><div><b>{relation.title}</b><small>{relation.type} · {relation.start}{relation.end ? `–${relation.end}` : "–aujourd’hui"}</small><span>{relation.detail}</span><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} <ExternalLink size={12} /></a></div></article>; }) : <div className="comparison-empty">Aucune relation active de ce corpus pour la période sélectionnée.</div>}</div><div className="comparison-exports"><button type="button" onClick={downloadComparisonCsv}><FileSpreadsheet size={14} /> CSV</button><button type="button" onClick={downloadComparisonPdf}><FileText size={14} /> Rapport PDF</button></div><button className="comparison-focus" type="button" onClick={() => { if (compareLeft && compareRight) { setSelectedActorId(null); setFocusView({ longitude: (compareLeft.position[0] + compareRight.position[0]) / 2, latitude: (compareLeft.position[1] + compareRight.position[1]) / 2, zoom: displayMode === "globe" ? 0.65 : 2.2 }); setViewKey((key) => key + 1); } }}><LocateFixed size={14} /> Cadrer les deux pays</button></aside>
 
-          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Recentrer</Button><Button className="instrument-button compare-trigger" variant="outline" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button snapshot-trigger" variant="outline" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Relevé PDF</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : displayMode === "tactical" ? "Tactique 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
+          <div className="world-map-actions"><Button className="instrument-button" variant="outline" title="Revenir au cadrage mondial" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Recentrer</Button><Button className="instrument-button compare-trigger" variant="outline" title="Sélectionner deux pays et examiner leurs relations" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button snapshot-trigger" variant="outline" title="Exporter le relevé correspondant aux filtres actifs" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Relevé PDF</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : displayMode === "tactical" ? "Tactique 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
         </section>
       </main>
 

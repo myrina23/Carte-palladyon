@@ -1,5 +1,13 @@
 # Mise à jour Atlas Flux
 
+## Charte UX et palette sémantique permanente
+
+- [x] Documenter les règles d’affordance, de modèle mental et de divulgation progressive.
+- [x] Formaliser l’usage sémantique de l’encre, du papier, du teal, du cyan, du lilas, du jaune et du corail.
+- [x] Ajuster les commandes pour rendre leur action perceptible sans tutoriel intrusif.
+- [x] Ajouter des indices contextuels et des explications au survol ou à la demande.
+- [x] Vérifier contraste, navigation clavier et cohérence visuelle sur bureau et mobile.
+
 ## Réseau Wikidata et gravité des conflits
 
 - [x] Résoudre les URI Wikidata du fichier en libellés d’acteurs et types de relations.

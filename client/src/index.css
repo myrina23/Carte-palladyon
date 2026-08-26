@@ -1,4 +1,4 @@
-/* Atlas Flux — atlas contemporain : fond minéral, grille discrète, typographie Space Grotesk / Source Serif 4 et signal Orange Méridien. */
+/* Atlas Flux — règle permanente : affordances évidentes, divulgation progressive, palette sémantique et interactions conventionnelles. */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -31,10 +31,17 @@
 }
 
 :root, .dark {
-  --primary: #ff6b35;
-  --primary-foreground: #101a24;
-  --background: #101a24;
-  --foreground: #f6f0e5;
+  --ink: #112235;
+  --paper: #fbf7f0;
+  --teal-active: #008c95;
+  --cyan-data: #20c4d9;
+  --lilac-context: #8b7ac8;
+  --yellow-cue: #f2c14e;
+  --coral-alert: #d95d4e;
+  --primary: var(--teal-active);
+  --primary-foreground: #fbf7f0;
+  --background: var(--ink);
+  --foreground: #fbf7f0;
   --card: #172630;
   --card-foreground: #f6f0e5;
   --popover: #172630;
@@ -45,11 +52,11 @@
   --muted-foreground: #98a9a8;
   --accent: #233640;
   --accent-foreground: #f6f0e5;
-  --destructive: #e75542;
+  --destructive: var(--coral-alert);
   --destructive-foreground: #fff8ed;
   --border: rgb(231 238 223 / 16%);
   --input: rgb(231 238 223 / 16%);
-  --ring: #ff6b35;
+  --ring: var(--cyan-data);
   --radius: 0.35rem;
 }
 
@@ -58,6 +65,8 @@
   html { background: #101a24; }
   body { @apply bg-background text-foreground; margin: 0; overflow-x: hidden; font-family: "Space Grotesk", sans-serif; }
   button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [type="button"]:not(:disabled), [type="submit"]:not(:disabled), [type="reset"]:not(:disabled), a[href], select:not(:disabled), input[type="checkbox"]:not(:disabled), input[type="radio"] { @apply cursor-pointer; }
+  :focus-visible { outline: 2px solid var(--cyan-data); outline-offset: 3px; }
+  button:not(:disabled):active { transform: scale(0.97); }
 }
 
 @layer components {
