@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertRelationProposal, InsertUser, relationProposals, users } from "../drizzle/schema";
+import { InsertRelationProposal, InsertUser, relationProposals, snapshotCollectionItems, snapshotCollections, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -111,4 +111,45 @@ export async function reviewRelationProposal(id: number, reviewerId: number, sta
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
   await db.update(relationProposals).set({ status, reviewerId, reviewNote: reviewNote || null, reviewedAt: new Date() }).where(eq(relationProposals.id, id));
+}
+
+export async function createSnapshotCollection(input: { ownerId: number; name: string; shareKey: string; visibility: "private" | "shared" }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(snapshotCollections).values(input);
+  return Number(result[0].insertId);
+}
+
+export async function addSnapshotCollectionItem(input: { collectionId: number; label: string; snapshotJson: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.insert(snapshotCollectionItems).values(input);
+}
+
+export async function listSnapshotCollectionsByOwner(ownerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const collections = await db.select().from(snapshotCollections).where(eq(snapshotCollections.ownerId, ownerId)).orderBy(desc(snapshotCollections.updatedAt));
+  const collectionIds = collections.map((collection) => collection.id);
+  const items = collectionIds.length ? await db.select().from(snapshotCollectionItems).orderBy(desc(snapshotCollectionItems.createdAt)) : [];
+  return collections.map((collection) => ({ ...collection, items: items.filter((item) => item.collectionId === collection.id) }));
+}
+
+export async function getSharedSnapshotCollection(shareKey: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const collections = await db.select().from(snapshotCollections).where(and(eq(snapshotCollections.shareKey, shareKey), eq(snapshotCollections.visibility, "shared"))).limit(1);
+  const collection = collections[0];
+  if (!collection) return undefined;
+  const items = await db.select().from(snapshotCollectionItems).where(eq(snapshotCollectionItems.collectionId, collection.id)).orderBy(desc(snapshotCollectionItems.createdAt));
+  return { ...collection, items };
+}
+
+export async function deleteSnapshotCollection(ownerId: number, collectionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const owned = await db.select({ id: snapshotCollections.id }).from(snapshotCollections).where(and(eq(snapshotCollections.id, collectionId), eq(snapshotCollections.ownerId, ownerId))).limit(1);
+  if (!owned[0]) throw new Error("Collection not found");
+  await db.delete(snapshotCollectionItems).where(eq(snapshotCollectionItems.collectionId, collectionId));
+  await db.delete(snapshotCollections).where(eq(snapshotCollections.id, collectionId));
 }

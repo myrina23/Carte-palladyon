@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { createRelationProposal, listPendingRelationProposals, listRelationProposalsBySubmitter, reviewRelationProposal } from "./db";
+import { nanoid } from "nanoid";
+import { addSnapshotCollectionItem, createRelationProposal, createSnapshotCollection, deleteSnapshotCollection, getSharedSnapshotCollection, listPendingRelationProposals, listRelationProposalsBySubmitter, listSnapshotCollectionsByOwner, reviewRelationProposal } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -15,6 +16,15 @@ export const relationProposalInput = z.object({
   startYear: z.number().int().min(1800).max(2100).optional(),
   endYear: z.number().int().min(1800).max(2100).optional(),
 }).refine((proposal) => proposal.endYear === undefined || proposal.startYear === undefined || proposal.endYear >= proposal.startYear, { message: "La fin doit être postérieure au début.", path: ["endYear"] });
+
+export const snapshotCollectionInput = z.object({
+  name: z.string().trim().min(2).max(160),
+  visibility: z.enum(["private", "shared"]).default("private"),
+  items: z.array(z.object({ label: z.string().trim().min(1).max(160), snapshotJson: z.string().min(2).max(50_000) })).min(1).max(24),
+});
+
+export const snapshotCollectionRemoveInput = z.object({ id: z.number().int().positive() });
+export const sharedSnapshotCollectionInput = z.object({ shareKey: z.string().min(6).max(64) });
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -40,6 +50,20 @@ export const appRouter = router({
       await reviewRelationProposal(input.id, ctx.user.id, input.status, input.reviewNote);
       return { success: true } as const;
     }),
+  }),
+  snapshotCollections: router({
+    mine: protectedProcedure.query(({ ctx }) => listSnapshotCollectionsByOwner(ctx.user.id)),
+    create: protectedProcedure.input(snapshotCollectionInput).mutation(async ({ ctx, input }) => {
+      const shareKey = nanoid(14);
+      const id = await createSnapshotCollection({ ownerId: ctx.user.id, name: input.name, visibility: input.visibility, shareKey });
+      await Promise.all(input.items.map((item) => addSnapshotCollectionItem({ collectionId: id, ...item })));
+      return { id, shareKey };
+    }),
+    remove: protectedProcedure.input(snapshotCollectionRemoveInput).mutation(async ({ ctx, input }) => {
+      await deleteSnapshotCollection(ctx.user.id, input.id);
+      return { success: true } as const;
+    }),
+    shared: publicProcedure.input(sharedSnapshotCollectionInput).query(({ input }) => getSharedSnapshotCollection(input.shareKey)),
   }),
 });
 

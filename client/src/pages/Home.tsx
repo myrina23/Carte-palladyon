@@ -108,6 +108,7 @@ type Relation = {
   temporalScope?: "structural";
   detail: string;
   provenance?: string;
+  dataset?: "sourced" | "demonstration";
 };
 
 type ViewConfig = { id: ViewId; label: string; short: string; longitude: number; latitude: number; zoom: number };
@@ -222,6 +223,59 @@ const ORGANIZATIONS: Organization[] = [
   ...WIKIDATA_ORGANIZATIONS.map((organization) => ({ id: organization.id, name: organization.name, acronym: organization.id, position: organization.position, description: "Organisation présente dans le sous-ensemble Wikidata transmis ; les appartenances visibles proviennent de la propriété P463." })),
 ];
 
+const DEMONSTRATION_ACTORS: RelationActor[] = [
+  { id: "FRA", name: "France", position: [2.3522, 48.8566] },
+  { id: "BRA", name: "Brésil", position: [-47.8825, -15.7942] },
+  { id: "IND", name: "Inde", position: [77.209, 28.6139] },
+  { id: "JPN", name: "Japon", position: [139.6917, 35.6895] },
+];
+
+const DEMONSTRATION_PARTNERS: RelationActor[] = [
+  DEMONSTRATION_ACTORS[1],
+  DEMONSTRATION_ACTORS[2],
+  DEMONSTRATION_ACTORS[3],
+  { id: "UN", name: "Organisation des Nations unies", position: [-74.006, 40.7128] },
+];
+
+const DEMONSTRATION_RELATIONS: Relation[] = RELATION_TYPES.flatMap((type, typeIndex) => DEMONSTRATION_ACTORS.map((source, actorIndex) => {
+  const target = DEMONSTRATION_PARTNERS[actorIndex];
+  return {
+    id: `demo-${type.id}-${source.id.toLowerCase()}`,
+    source,
+    target,
+    type: type.id,
+    title: `Scénario ${type.label.toLowerCase()} · ${source.name} → ${target.name}`,
+    start: 2020 + (typeIndex % 4),
+    detail: `Relation démonstrative conçue pour exercer les filtres, comparaisons, fiches et exports Atlas Flux. Elle ne constitue ni un fait établi ni une donnée UCDP ou Wikidata et doit être remplacée par une source vérifiable avant tout usage analytique.`,
+    provenance: "Corpus démonstratif Atlas Flux · non factuel · à remplacer par une source vérifiable",
+    dataset: "demonstration",
+  };
+}));
+
+const ACTOR_SYNONYMS: Record<string, string[]> = {
+  FRA: ["france", "french republic", "republique francaise", "république française"],
+  BRA: ["brasil", "brazil", "federative republic of brazil"],
+  IND: ["india", "bharat", "republic of india"],
+  JPN: ["japan", "nihon", "nippon"],
+  TUR: ["turkey", "türkiye", "turkiye", "republic of turkey"],
+  USA: ["united states", "united states of america", "us", "u.s.", "america", "etats unis", "états-unis"],
+  GBR: ["united kingdom", "uk", "great britain", "angleterre", "royaume uni"],
+  KOR: ["south korea", "republic of korea", "coree du sud", "corée du sud"],
+  UN: ["united nations", "nations unies", "onu"],
+  NATO: ["north atlantic treaty organization", "otan"],
+  EU: ["european union", "union europeenne", "union européenne"],
+  AU: ["african union", "union africaine", "ua"],
+  OPEC: ["organization of the petroleum exporting countries", "organisation of petroleum exporting countries", "opep"],
+  UNESCO: ["united nations educational scientific and cultural organization", "unesco"],
+  WTO: ["world trade organization", "organisation mondiale du commerce", "omc"],
+  WHO: ["world health organization", "organisation mondiale de la sante", "organisation mondiale de la santé", "oms"],
+  INTERPOL: ["international criminal police organization", "organisation internationale de police criminelle"],
+  OECD: ["organisation for economic co-operation and development", "organization for economic cooperation and development", "ocde"],
+  APEC: ["asia pacific economic cooperation", "cooperation economique pour l asie pacifique", "coopération économique pour l’asie-pacifique"],
+  IEA: ["international energy agency", "agence internationale de l energie", "aIE"],
+  OPCW: ["organisation for the prohibition of chemical weapons", "organisation pour l interdiction des armes chimiques", "oiac"],
+};
+
 /* Corpus initial : exemples du document de classification transmis, conçus pour tester les filtres de type et de période. */
 const CLASSIFICATION_RELATIONS: Relation[] = [
   { id: "uk-india-history", source: { id: "GBR", name: "Royaume-Uni", position: [-0.1278, 51.5074] }, target: { id: "IND", name: "Inde", position: [77.209, 28.6139] }, type: "historique", title: "Empire britannique", start: 1858, end: 1947, detail: "Relation historique citée dans le système de classification : période de l’Empire britannique en Inde.", provenance: "Système de classification transmis · exemple Royaume-Uni–Inde" },
@@ -246,7 +300,7 @@ const RELATION_REFERENCES: Record<string, { label: string; url: string }> = {
 };
 
 const WIKIDATA_RELATION_REFERENCES: Record<string, { label: string; url: string }> = Object.fromEntries(WIKIDATA_RESOLVED_RELATIONS.map((relation) => [relation.id, { label: `Wikidata · ${relation.source.qid} → ${relation.target.qid}`, url: relation.statementId ? `${wikidataUrl(relation.source.qid)}#${relation.statementId}` : wikidataUrl(relation.source.qid) }]));
-const RELATIONS: Relation[] = [...CLASSIFICATION_RELATIONS, ...WIKIDATA_RESOLVED_RELATIONS.map((relation): Relation => ({ id: relation.id, source: { id: relation.source.id, name: relation.source.name, position: relation.source.position }, target: { id: relation.target.id, name: relation.target.name, position: relation.target.position }, type: relation.type, title: relation.title, start: relation.start, end: relation.end, temporalScope: relation.temporalScope, detail: relation.detail, provenance: `Wikidata · ${relation.property} · ${relation.source.qid} → ${relation.target.qid}${relation.statementId ? ` · énoncé qualifié` : ""}` }))];
+const RELATIONS: Relation[] = [...CLASSIFICATION_RELATIONS.map((relation) => ({ ...relation, dataset: "sourced" as const })), ...WIKIDATA_RESOLVED_RELATIONS.map((relation): Relation => ({ id: relation.id, source: { id: relation.source.id, name: relation.source.name, position: relation.source.position }, target: { id: relation.target.id, name: relation.target.name, position: relation.target.position }, type: relation.type, title: relation.title, start: relation.start, end: relation.end, temporalScope: relation.temporalScope, detail: relation.detail, provenance: `Wikidata · ${relation.property} · ${relation.source.qid} → ${relation.target.qid}${relation.statementId ? ` · énoncé qualifié` : ""}`, dataset: "sourced" })), ...DEMONSTRATION_RELATIONS];
 
 const ORGANIZATION_REFERENCES: Record<string, { official: string; wikipedia: string }> = {
   NATO: { official: "https://www.nato.int/", wikipedia: "https://fr.wikipedia.org/wiki/Organisation_du_trait%C3%A9_de_l%27Atlantique_nord" },
@@ -334,6 +388,14 @@ function normalizeSearch(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
 }
 
+function localizedCountryAliases(iso2: string | undefined) {
+  const code = iso2?.toUpperCase();
+  if (!code || code.length !== 2) return [];
+  return Array.from(new Set(["fr", "en", "es", "de", "pt", "it"].flatMap((locale) => {
+    try { return [new Intl.DisplayNames([locale], { type: "region" }).of(code) ?? ""]; } catch { return []; }
+  }).filter(Boolean)));
+}
+
 export default function Home() {
   // The useAuth hook provides authentication state.
   // To implement login/logout, call logout(), or start login from an event
@@ -360,6 +422,7 @@ export default function Home() {
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshot[]>(() => {
     try { return JSON.parse(window.localStorage.getItem("atlas-flux-snapshots") ?? "[]"); } catch { return []; }
   });
+  const [collectionSnapshotIds, setCollectionSnapshotIds] = useState<string[]>([]);
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(() => { const mode = new URLSearchParams(window.location.search).get("analysis"); return mode === "conflict" || mode === "evolution" || mode === "multilateral" ? mode : analysisModeForType(primaryUrlState().type); });
   const [selectedZone, setSelectedZone] = useState<RegionId | null>(() => primaryUrlState().region === "all" ? null : primaryUrlState().region);
   const [showConflictHeat, setShowConflictHeat] = useState(() => new URLSearchParams(window.location.search).get("analysis") === "conflict");
@@ -398,10 +461,15 @@ export default function Home() {
   const restoredPrimaryFilterFocus = useRef(false);
   const [isContributionOpen, setIsContributionOpen] = useState(() => new URLSearchParams(window.location.search).get("contribute") === "1");
   const [proposalForm, setProposalForm] = useState({ sourceActor: "", targetActor: "", relationType: "geopolitique", title: "", detail: "", sourceUrl: "", startYear: "", endYear: "" });
+  const requestedCollectionKey = new URLSearchParams(window.location.search).get("collection");
   const utils = trpc.useUtils();
   const proposalMutation = trpc.relationProposals.submit.useMutation({ onSuccess: () => { void utils.relationProposals.mine.invalidate(); setProposalForm({ sourceActor: "", targetActor: "", relationType: "geopolitique", title: "", detail: "", sourceUrl: "", startYear: "", endYear: "" }); } });
   const pendingProposalsQuery = trpc.relationProposals.pending.useQuery(undefined, { enabled: Boolean(user?.role === "admin" && isContributionOpen) });
   const reviewMutation = trpc.relationProposals.review.useMutation({ onSuccess: () => { void utils.relationProposals.pending.invalidate(); } });
+  const collectionsQuery = trpc.snapshotCollections.mine.useQuery(undefined, { enabled: isAuthenticated });
+  const createCollectionMutation = trpc.snapshotCollections.create.useMutation({ onSuccess: () => { void utils.snapshotCollections.mine.invalidate(); setShareNotice("Collection enregistrée."); } });
+  const removeCollectionMutation = trpc.snapshotCollections.remove.useMutation({ onSuccess: () => { void utils.snapshotCollections.mine.invalidate(); setShareNotice("Collection supprimée."); } });
+  const sharedCollectionQuery = trpc.snapshotCollections.shared.useQuery({ shareKey: requestedCollectionKey ?? "" }, { enabled: Boolean(requestedCollectionKey) });
 
   const selectedViewConfig = VIEWS.find((view) => view.id === activeView) ?? VIEWS[0];
   const selectedView = focusView ?? selectedViewConfig;
@@ -419,6 +487,12 @@ export default function Home() {
     if (!payload) return;
     try { applySavedSnapshot(JSON.parse(decodeURIComponent(window.atob(payload))) as SavedSnapshot); } catch { setShareNotice("Le lien de relevé reçu est incomplet."); }
   }, []);
+
+  useEffect(() => {
+    const firstItem = sharedCollectionQuery.data?.items?.[0];
+    if (!firstItem) return;
+    try { applySavedSnapshot(JSON.parse(firstItem.snapshotJson) as SavedSnapshot); setShareNotice(`Collection partagée ouverte : ${sharedCollectionQuery.data?.name ?? "relevé"}.`); } catch { setShareNotice("La collection partagée ne peut pas être restaurée."); }
+  }, [sharedCollectionQuery.data]);
 
   useEffect(() => {
     let isMounted = true;
@@ -546,8 +620,8 @@ export default function Home() {
     const query = normalizeSearch(searchQuery.trim());
     if (!query) return [];
     const score = (label: string, aliases: string[] = []) => { const values = [label, ...aliases].map(normalizeSearch); return values.some((value) => value === query) ? 0 : values.some((value) => value.startsWith(query)) ? 1 : values.some((value) => value.split(/[\s-]+/).some((word) => word.startsWith(query))) ? 2 : 3; };
-    const countryEntries = allCountries.filter((country) => normalizeSearch(country.name).includes(query) || normalizeSearch(country.iso3).includes(query) || normalizeSearch(country.sovereign ?? "").includes(query)).map((country) => ({ id: country.iso3, label: country.name, kind: country.entityKind === "territory" ? "Territoire" as const : "Pays" as const, position: country.position, country, score: score(country.name, [country.iso3, country.sovereign ?? ""]) }));
-    const organizationEntries = ORGANIZATIONS.filter((organization) => normalizeSearch(organization.name).includes(query) || normalizeSearch(organization.acronym).includes(query)).map((organization) => ({ id: organization.id, label: organization.name, kind: "Organisation" as const, position: organization.position, organization, score: score(organization.name, [organization.acronym]) }));
+    const countryEntries = allCountries.filter((country) => { const aliases = [...(ACTOR_SYNONYMS[country.iso3] ?? []), ...localizedCountryAliases(country.iso2)]; return normalizeSearch(country.name).includes(query) || normalizeSearch(country.iso3).includes(query) || normalizeSearch(country.sovereign ?? "").includes(query) || aliases.some((alias) => normalizeSearch(alias).includes(query)); }).map((country) => ({ id: country.iso3, label: country.name, kind: country.entityKind === "territory" ? "Territoire" as const : "Pays" as const, position: country.position, country, score: score(country.name, [country.iso3, country.sovereign ?? "", ...(ACTOR_SYNONYMS[country.iso3] ?? []), ...localizedCountryAliases(country.iso2)]) }));
+    const organizationEntries = ORGANIZATIONS.filter((organization) => { const aliases = ACTOR_SYNONYMS[organization.id] ?? []; return normalizeSearch(organization.name).includes(query) || normalizeSearch(organization.acronym).includes(query) || aliases.some((alias) => normalizeSearch(alias).includes(query)); }).map((organization) => ({ id: organization.id, label: organization.name, kind: "Organisation" as const, position: organization.position, organization, score: score(organization.name, [organization.acronym, ...(ACTOR_SYNONYMS[organization.id] ?? [])]) }));
     const zoneEntries = ANALYSIS_ZONES.filter((zone) => normalizeSearch(zone.label).includes(query)).map((zone) => ({ id: zone.id, label: zone.label, kind: "Zone" as const, position: zone.position, region: zone.region, score: score(zone.label) }));
     return [...countryEntries, ...organizationEntries, ...zoneEntries].sort((left, right) => left.score - right.score || left.label.localeCompare(right.label, "fr")).map(({ score: _score, ...entry }) => entry);
   }, [allCountries, searchQuery]);
@@ -916,6 +990,21 @@ export default function Home() {
     report.save(`atlas-flux-snapshot-${timelineYear}.pdf`);
   }
 
+  function downloadDetailCsv(kind: string, title: string, relations: Relation[]) {
+    const content = createBilateralCsv(relations.map(exportRelation));
+    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `atlas-flux-${kind.toLowerCase()}-${normalizeSearch(title).replace(/\s+/g, "-") || "fiche"}.csv`;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  async function downloadDetailPdf(kind: string, title: string, relations: Relation[]) {
+    const report = createAtlasPdfReport({ eyebrow: `ATLAS FLUX / FICHE ${kind.toUpperCase()}`, headline: title, metadata: [`Période de lecture : ${formatDateFr(periodStartDate)} — ${formatDateFr(periodEndDate)}`, `${relations.length} relation${relations.length > 1 ? "s" : ""} dans la fiche · ${relations.filter((relation) => relation.dataset === "demonstration").length} entrée${relations.filter((relation) => relation.dataset === "demonstration").length > 1 ? "s" : ""} démonstrative${relations.filter((relation) => relation.dataset === "demonstration").length > 1 ? "s" : ""}`], relations: relations.map(exportRelation), mapImage: await captureActiveMap() });
+    report.save(`atlas-flux-${kind.toLowerCase()}-${normalizeSearch(title).replace(/\s+/g, "-") || "fiche"}.pdf`);
+  }
+
   function saveNamedSnapshot() {
     const defaultName = `Relevé ${formatDateFr(new Date())}`;
     const name = window.prompt("Nommer ce relevé filtré", defaultName)?.trim();
@@ -924,6 +1013,16 @@ export default function Home() {
     const next = [record, ...savedSnapshots].slice(0, 8);
     setSavedSnapshots(next);
     window.localStorage.setItem("atlas-flux-snapshots", JSON.stringify(next));
+  }
+
+  function createCollectionFromSavedSnapshots() {
+    if (!isAuthenticated) { startLogin(); return; }
+    const selectedSnapshots = savedSnapshots.filter((snapshot) => collectionSnapshotIds.includes(snapshot.createdAt));
+    if (!selectedSnapshots.length) { setShareNotice("Sélectionnez au moins un relevé avant de créer une collection."); return; }
+    const name = window.prompt("Nom de la collection", `Collection ${formatDateFr(new Date())}`)?.trim();
+    if (!name) return;
+    const shared = window.confirm("Partager cette collection par un lien unique ?");
+    createCollectionMutation.mutate({ name, visibility: shared ? "shared" : "private", items: selectedSnapshots.map((snapshot) => ({ label: snapshot.name, snapshotJson: JSON.stringify(snapshot) })) });
   }
 
   function applySavedSnapshot(snapshot: SavedSnapshot) {
@@ -1047,6 +1146,7 @@ export default function Home() {
           {hoveredRelation && (() => { const reference = relationReference(hoveredRelation.relation); return <aside className="arc-source-tooltip" style={{ left: Math.min(hoveredRelation.x + 16, 820), top: Math.max(70, hoveredRelation.y - 12) }}><p><i style={{ backgroundColor: `rgb(${relationColor(hoveredRelation.relation.type).join(" ")})` }} />{hoveredRelation.relation.type} · {relationPeriodLabel(hoveredRelation.relation)}</p><strong>{hoveredRelation.relation.source.name} → {hoveredRelation.relation.target.name}</strong><span>{hoveredRelation.relation.title}</span><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} <ExternalLink size={12} /></a></aside>; })()}
 
           <div className="world-intro intro-animate"><p className="eyebrow"><Radar size={14} aria-hidden="true" /> {displayMode === "globe" ? "GLOBE DES INTERDÉPENDANCES" : displayMode === "tactical" ? "VUE TACTIQUE LOCALE" : "OBSERVATOIRE GÉOPOLITIQUE"}</p><h1>Relier les<br /><i>forces</i> en présence.</h1><p>{displayMode === "tactical" ? "Approchez une zone, un pays ou une organisation pour examiner sa densité relationnelle et les événements de conflit sourcés." : "Un clic révèle le réseau d’un acteur ; un second clic sur un autre acteur lance leur comparaison directe. Filtrez ensuite les liens par nature et par période."}</p></div>
+          <p className="demo-corpus-chip"><Database size={12} /> {DEMONSTRATION_RELATIONS.length} scénarios démonstratifs · non factuels</p>
 
           <section className="world-search" aria-label="Rechercher un acteur"><Search size={16} aria-hidden="true" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher un pays ou une organisation" aria-label="Rechercher un pays ou une organisation" />{searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Effacer la recherche"><X size={15} /></button>}{searchResults.length > 0 && <div className="search-results">{searchResults.map((entry) => <button key={entry.id} type="button" onClick={() => selectSearchEntry(entry)}><span className={entry.kind === "Organisation" ? "search-kind is-organization" : "search-kind"}>{entry.kind === "Organisation" ? <Building2 size={13} /> : <MapPin size={13} />}</span><span><b>{entry.label}</b><small>{entry.kind}</small></span></button>)}</div>}</section>
 
@@ -1074,6 +1174,8 @@ export default function Home() {
             </>; })()}
           </aside>
 
+          {(selectedCountry || selectedOrganization || selectedRelation) && (() => { const title = selectedRelation ? `${selectedRelation.source.name} — ${selectedRelation.target.name}` : selectedCountry?.name ?? selectedOrganization?.name ?? "Fiche"; const kind = selectedRelation ? "relation" : selectedCountry ? "pays" : "organisation"; const relations = selectedRelation ? [selectedRelation] : activeRelations.filter((relation) => relation.source.id === selectedCountry?.iso3 || relation.target.id === selectedCountry?.iso3 || relation.source.id === selectedOrganization?.id || relation.target.id === selectedOrganization?.id); return <div className="detail-export-dock" aria-label="Exporter la fiche détaillée"><span>EXPORTER LA FICHE</span><button type="button" onClick={() => void downloadDetailPdf(kind, title, relations)}><Printer size={14} /> PDF</button><button type="button" onClick={() => downloadDetailCsv(kind, title, relations)}><FileSpreadsheet size={14} /> CSV</button></div>; })()}
+
           {(selectedCountry || selectedRelation || selectedOrganization) && (() => { const actor = selectedCountry ? { id: selectedCountry.iso3, name: selectedCountry.name, position: selectedCountry.position } : selectedRelation ? selectedRelation.source : selectedOrganization ? { id: selectedOrganization.id, name: selectedOrganization.name, position: selectedOrganization.position } : null; if (!actor) return null; const wikidataContext = WIKIDATA_RESOLVED_RELATIONS.filter((relation) => relation.source.id === actor.id || relation.target.id === actor.id); const ucdpContext = UCDP_CONFLICT_CELLS.filter((cell) => cell.year >= periodStartDate.getFullYear() && cell.year <= periodEndDate.getFullYear() && Math.abs(cell.position[0] - actor.position[0]) < 12 && Math.abs(cell.position[1] - actor.position[1]) < 9); const fatalities = ucdpContext.reduce((sum, cell) => sum + cell.fatalities, 0); return <aside className="context-evidence-panel" aria-live="polite" aria-label="Contexte UCDP et Wikidata"><p><Database size={13} /> CONTEXTE SOURCÉ</p><div><b>Wikidata</b><span>{wikidataContext.length} relation{wikidataContext.length > 1 ? "s" : ""} P47/P463 pour {actor.name}</span>{wikidataContext.slice(0, 2).map((relation) => <a key={relation.id} href={wikidataUrl(relation.source.id === actor.id ? relation.target.qid : relation.source.qid)} target="_blank" rel="noreferrer">{relation.title} · {relation.start ? `${relation.start}${relation.end ? `–${relation.end}` : "–auj."}` : "structurelle"}<ExternalLink size={11} /></a>)}</div><div><b>UCDP GED</b><span>{ucdpContext.length} cellule{ucdpContext.length > 1 ? "s" : ""} proche{ucdpContext.length > 1 ? "s" : ""} · {fatalities.toLocaleString("fr-FR")} décès agrégés</span><a href={UCDP_GED_SOURCE} target="_blank" rel="noreferrer">Sous-ensemble {UCDP_GED_PERIOD} <ExternalLink size={11} /></a></div></aside>; })()}
 
           <aside className={`world-relation-panel ${selectedRelation ? "is-open" : ""}`} aria-live="polite" aria-label="Détail de la relation"><button className="detail-close" type="button" onClick={() => setSelectedRelation(null)} aria-label="Fermer le détail"><X size={17} /></button>{selectedRelation && (() => { const reference = relationReference(selectedRelation); const type = RELATION_TYPES.find((entry) => entry.id === selectedRelation.type) ?? RELATION_TYPES[0]; const intensity = Math.min(10, Math.max(2, Math.round((selectedRelation.detail.length + (selectedRelation.end ? 30 : 10)) / 24))); return <><div className="relation-profile-head"><p className="eyebrow"><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /> {type.label.toUpperCase()}</p><h3>{selectedRelation.source.name}<span>→</span>{selectedRelation.target.name}</h3></div><div className="relation-quick-actions"><button type="button" onClick={() => setSelectedActorId(selectedRelation.source.id)}><UsersRound size={14} /> Voir les acteurs</button><a href={reference.url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Voir la relation</a><button type="button" onClick={() => navigator.clipboard?.writeText(window.location.href)}><ArrowUpRight size={14} /> Partager</button></div><div className="relation-facts"><div><span>PÉRIODE</span><strong>{relationPeriodLabel(selectedRelation)}</strong></div><div><span>ÉCHELLE</span><strong>{activeRegions.includes("all") ? "Mondiale" : activeRegions.length > 1 ? "Multi-régionale" : "Régionale"}</strong></div><div><span>INTENSITÉ</span><strong><i><b style={{ width: `${intensity * 10}%`, backgroundColor: `rgb(${type.color.join(" ")})` }} /></i>{intensity}/10</strong></div></div><section className="relation-summary"><p>RÉSUMÉ</p><h4>{selectedRelation.title}</h4><span>{selectedRelation.detail}</span></section><section className="relation-history-card"><p><Clock3 size={14} /> HISTORIQUE <em>{selectedRelation.start ? "1 événement" : "Structurel"}</em></p><div><strong>{selectedRelation.start ?? "—"}</strong><span>{selectedRelation.end ? `→ ${selectedRelation.end}` : "→ aujourd’hui"}</span></div><small>Dernière mise à jour : lecture de la source active</small></section><a className="relation-source-link" href={reference.url} target="_blank" rel="noreferrer"><BookOpen size={14} /> {reference.label} <ExternalLink size={14} /></a><div className="relation-bottom-actions"><button type="button" onClick={downloadScenarioSnapshot}><Printer size={15} /> PDF</button><button type="button" onClick={openContribution}><PenLine size={15} /> Correction</button></div></>; })()}</aside>
@@ -1085,6 +1187,14 @@ export default function Home() {
           <div className="world-map-actions"><Button className="instrument-button" variant="outline" title="Revenir au cadrage mondial" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Recentrer</Button><Button className="instrument-button compare-trigger" variant="outline" title="Sélectionner deux pays et examiner leurs relations" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button contribution-trigger" variant="outline" title="Proposer une relation sourcée à validation éditoriale" onClick={openContribution}><PenLine size={16} aria-hidden="true" /> Annoter</Button><Button className="instrument-button snapshot-trigger" variant="outline" title="Exporter la carte et les filtres actifs dans un relevé PDF" onClick={downloadScenarioSnapshot}><Printer size={16} aria-hidden="true" /> Relevé PDF</Button><Button className="instrument-button report-trigger" variant="outline" title="Produire un rapport analytique sourcé" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Rapport PDF</Button><Button className="instrument-button saved-snapshot-trigger" variant="outline" title="Nommer et conserver ce relevé filtré pour la session" onClick={saveNamedSnapshot}><BookOpen size={16} aria-hidden="true" /> Enregistrer{savedSnapshots.length ? ` (${savedSnapshots.length})` : ""}</Button><Button className="instrument-button share-snapshot-trigger" variant="outline" title="Partager le dernier relevé sauvegardé" onClick={() => void shareSavedSnapshot()}><Share2 size={16} aria-hidden="true" /> Partager</Button>{shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}<p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : displayMode === "tactical" ? "Tactique 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
         </section>
       </main>
+
+      {isAuthenticated && collectionsQuery.data?.length ? <section className="collection-management-section" aria-label="Gérer mes collections"><p className="eyebrow"><BookOpen size={13} /> MES COLLECTIONS</p><div>{collectionsQuery.data.map((collection) => <article key={collection.id}><span><b>{collection.name}</b><small>{collection.items.length} relevé{collection.items.length > 1 ? "s" : ""}</small></span><button type="button" onClick={() => { if (window.confirm(`Supprimer la collection « ${collection.name} » ?`)) removeCollectionMutation.mutate({ id: collection.id }); }} disabled={removeCollectionMutation.isPending} aria-label={`Supprimer ${collection.name}`}><X size={14} /></button></article>)}</div></section> : null}
+
+      {sharedCollectionQuery.data && <section className="shared-collection-section" aria-label="Relevés de la collection partagée"><div><p className="eyebrow"><Share2 size={13} /> COLLECTION PARTAGÉE</p><strong>{sharedCollectionQuery.data.name}</strong><small>{sharedCollectionQuery.data.items.length} relevé{sharedCollectionQuery.data.items.length > 1 ? "s" : ""} disponible{sharedCollectionQuery.data.items.length > 1 ? "s" : ""}</small></div><div>{sharedCollectionQuery.data.items.map((item) => <button type="button" key={item.id} onClick={() => { try { applySavedSnapshot(JSON.parse(item.snapshotJson) as SavedSnapshot); setShareNotice(`Relevé appliqué : ${item.label}`); } catch { setShareNotice("Ce relevé ne peut pas être restauré."); } }}>{item.label}</button>)}</div></section>}
+
+      {savedSnapshots.length > 0 && <section className="collection-picker-section" aria-label="Choisir les relevés à organiser"><div><p className="eyebrow"><Check size={13} /> PRÉPARER UNE COLLECTION</p><strong>{collectionSnapshotIds.length} relevé{collectionSnapshotIds.length > 1 ? "s" : ""} sélectionné{collectionSnapshotIds.length > 1 ? "s" : ""}</strong></div><div>{savedSnapshots.map((snapshot) => <label key={snapshot.createdAt}><input type="checkbox" checked={collectionSnapshotIds.includes(snapshot.createdAt)} onChange={() => setCollectionSnapshotIds((current) => current.includes(snapshot.createdAt) ? current.filter((id) => id !== snapshot.createdAt) : [...current, snapshot.createdAt])} /> <span>{snapshot.name}</span></label>)}</div><button type="button" onClick={createCollectionFromSavedSnapshots} disabled={createCollectionMutation.isPending || !collectionSnapshotIds.length}>Créer la collection <Share2 size={14} /></button></section>}
+
+      <section className="snapshot-collections-section" aria-label="Collections de relevés"><div><p className="eyebrow"><BookOpen size={14} /> COLLECTIONS DE RELEVÉS</p><h2>Organiser les lectures<br /><i>à partager</i>.</h2><p>Regroupez vos relevés filtrés dans une collection privée ou générez un lien de lecture partagé. Les relations du corpus démonstratif restent toujours signalées comme telles.</p></div><div className="snapshot-collections-card"><button type="button" onClick={createCollectionFromSavedSnapshots} disabled={createCollectionMutation.isPending}>{createCollectionMutation.isPending ? "Création…" : "Créer depuis mes relevés"} <Share2 size={15} /></button>{!isAuthenticated ? <small>Connectez-vous pour mémoriser vos collections et leurs liens de partage.</small> : collectionsQuery.isLoading ? <small>Lecture des collections…</small> : collectionsQuery.data?.length ? <div>{collectionsQuery.data.map((collection) => <article key={collection.id}><div><b>{collection.name}</b><span>{collection.items.length} relevé{collection.items.length > 1 ? "s" : ""} · {collection.visibility === "shared" ? "partagée" : "privée"}</span></div>{collection.visibility === "shared" && <button type="button" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}${window.location.pathname}?collection=${collection.shareKey}`)} title="Copier le lien de collection"><Share2 size={14} /></button>}</article>)}</div> : <small>Aucune collection encore enregistrée. Créez un premier groupe à partir de vos relevés.</small>}</div></section>
 
       <section className="world-brief" aria-labelledby="world-brief-title"><div className="world-brief-index"><span>02</span><p>LECTURE<br />DES LIENS</p></div><div className="world-brief-copy"><p className="eyebrow"><span className="compass-state-marker" aria-hidden="true" /><UsersRound size={14} aria-hidden="true" /> CORPUS EXPLORATOIRE</p><h2 id="world-brief-title">Des relations pour <i>interroger</i> les rapports de force.</h2><p>Les arcs visibles illustrent les types de relations, périodes et échelles définis dans votre système de classification. Le corpus initial sert à tester l’exploration et doit être enrichi de sources vérifiables avant toute analyse approfondie.</p><div className="field-notes"><span>PLANCHE 02 / MONDE</span><span>GRILLE 0,5° / 2020–2025</span><span>RÉF. GED + WIKIDATA</span></div><a href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Fond géographique Natural Earth <ArrowUpRight size={15} aria-hidden="true" /></a></div><div className="world-method"><article><strong>{RELATIONS.length}</strong><span>relations<br />classifiées</span></article><article><strong>{RELATION_TYPES.length}</strong><span>types de<br />liens</span></article><article><strong>03</strong><span>modes de<br />projection</span></article></div></section>
 

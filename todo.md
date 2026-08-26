@@ -30,6 +30,15 @@
 - [x] Permettre de partager les relevés enregistrés via un lien unique et via l’API de partage du navigateur.
 - [x] Tester les parcours desktop et mobile, la recherche, les tooltips, les thèmes et le partage.
 
+## Corpus d’exploration, exports et collections
+
+- [x] Créer un corpus démonstratif étiqueté, couvrant quatre pays et les typologies de relation, sans le confondre avec les données UCDP/Wikidata.
+- [x] Préparer le modèle de collections partagées pour organiser les relevés enregistrés.
+- [x] Vérifier un territoire ou une dépendance via la recherche multilingue et consigner ce cas de couverture.
+- [x] Exporter les fiches pays, organisations et relations en PDF ou CSV contextualisés.
+- [x] Vérifier la suppression propriétaire, la lecture partagée et la création d’une collection par tests de procédure couvrant leur cycle complet.
+- [x] Vérifier les exports PDF/CSV de fiche dans le navigateur et documenter la vérification des collections authentifiées.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.

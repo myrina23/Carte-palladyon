@@ -46,3 +46,26 @@ export const relationProposals = mysqlTable("relationProposals", {
 
 export type RelationProposal = typeof relationProposals.$inferSelect;
 export type InsertRelationProposal = typeof relationProposals.$inferInsert;
+
+export const snapshotCollections = mysqlTable("snapshotCollections", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  name: varchar("name", { length: 160 }).notNull(),
+  shareKey: varchar("shareKey", { length: 64 }).notNull().unique(),
+  visibility: mysqlEnum("visibility", ["private", "shared"]).default("private").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const snapshotCollectionItems = mysqlTable("snapshotCollectionItems", {
+  id: int("id").autoincrement().primaryKey(),
+  collectionId: int("collectionId").notNull().references(() => snapshotCollections.id),
+  label: varchar("label", { length: 160 }).notNull(),
+  snapshotJson: text("snapshotJson").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SnapshotCollection = typeof snapshotCollections.$inferSelect;
+export type InsertSnapshotCollection = typeof snapshotCollections.$inferInsert;
+export type SnapshotCollectionItem = typeof snapshotCollectionItems.$inferSelect;
+export type InsertSnapshotCollectionItem = typeof snapshotCollectionItems.$inferInsert;
