@@ -40,3 +40,12 @@
 | Sélecteurs A/B | Inspection navigateur des options du comparateur | Chaque pays est préfixé par son drapeau ISO ; les unités sans code ISO affichent le marqueur territorial `◉`. |
 | Mobile 375 × 812 | Captures `?search=fra` et `?compare=1` | Les résultats France et territoires affichent drapeaux ou marqueurs ; les valeurs actives A/B affichent les drapeaux de Turquie et Grèce. |
 | Preuve visuelle mobile | Captures locales contrôlées | `webdev-preview-root-1787732587914905412-5563.png` rend les drapeaux France et Polynésie française, ainsi que les marqueurs territoriaux ; `webdev-preview-root-1787732591887024980-4527.png` rend les valeurs A/B 🇹🇷 Türkiye et 🇬🇷 Greece. |
+
+## Panneaux verre fumé
+
+| Format | Vérification | Résultat |
+| --- | --- | --- |
+| Bureau 1440 × 900 | Filtres, recherche, timeline, actions et surfaces contextuelles | Les panneaux laissent désormais filtrer la carte derrière un fond fumé, avec flou léger, reflet supérieur discret et bordure unique à faible contraste. |
+| Mobile 375 × 812 | Filtres ouverts avec actions cartographiques | Les groupes restent lisibles et espacés ; la commande œil reste accessible pour replier le panneau. |
+| Repli réversible | Exécution navigateur sur `.map-filter-visibility-toggle` | Le clic applique `filters-hidden`, rend le panneau à `opacity: 0` et `pointer-events: none` tout en conservant l’œil visible ; le second clic retire la classe et restaure les interactions. |
+| Repli mobile responsive | Contrôle Chromium CDP à 375 × 812 | État initial : opacité `1` et interactions actives. Après clic : `filtersHidden: true`, opacité `0`, interactions désactivées et œil visible. Après second clic : opacité `1`, interactions actives et œil toujours visible. |

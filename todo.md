@@ -61,6 +61,13 @@
 - [x] Étendre le langage translucide, superposé et moderne aux composants cartographiques : recherche, panneaux, toggles et sliders.
 - [x] Vérifier au rendu mobile la recherche drapeautée et l’ouverture du comparateur A/B avec drapeaux, puis consigner une preuve observable.
 
+## Panneaux verre fumé
+
+- [x] Transformer les panneaux de filtres, recherche, fiches et comparateur en surfaces plus translucides avec flou de fond discret.
+- [x] Réduire les bordures, alléger les séparateurs et augmenter la respiration entre sections.
+- [x] Préserver le contraste des textes et des actions sur carte sombre et claire.
+- [x] Vérifier explicitement le repli et la réapparition du panneau de filtres avec le nouveau style verre fumé dans une session mobile responsive.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.
