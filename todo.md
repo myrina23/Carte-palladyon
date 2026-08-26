@@ -70,6 +70,11 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Harmoniser la scrollbar du panneau Filtres principaux avec le verre dépoli transparent.
+- [x] Retirer les deux libellés de dates redondants et toute séparation visuelle superflue dans la timeline.
+- [x] Retirer l’élément contextuel persistant qui crée des conflits d’affichage sur la carte.
+- [x] Retirer du panneau Filtres le bloc de période redondant, désormais regroupé dans le popover de Timeline.
+- [x] Ouvrir directement le calendrier et les molettes de période au clic sur Timeline, dans un segment unique.
 - [x] Déplacer le panneau de filtres à gauche, rendre la recherche centrée et conserver l’œil indépendant.
 - [x] Remplacer les indicateurs textuels « actif » par des interrupteurs Apple et une opacité reflétant chaque état, sans scrollbar interne redondante.
 - [x] Fermer le panneau contextuel gênant à chaque interaction directe avec la carte.

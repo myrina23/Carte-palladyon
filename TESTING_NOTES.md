@@ -68,3 +68,12 @@
 | Timeline | Captures bureau et mobile | La lecture temporelle affiche deux bornes DE/À en JJ/MM/AAAA et deux curseurs. Un clic sur « Timeline » ouvre les champs date et le calendrier de plage. |
 | Carte | Revue du gestionnaire de clic | Tout clic direct sur la carte masque l’introduction initiale pour libérer l’exploration. |
 | Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **16 tests Vitest** validés, dont trois contrats d’interface Atlas Flux. |
+
+## Simplification de la timeline et des panneaux
+
+| Parcours | Vérification | Résultat |
+| --- | --- | --- |
+| Bureau 1440 × 900 | Timeline et scène cartographique | Les libellés redondants et la séparation entre les curseurs ont disparu. Les deux poignées occupent une piste unique continue ; leurs repères restent attachés aux poignées. |
+| Mobile 375 × 812 | Timeline et panneau Filtres | La piste unique, l’icône Timeline et les deux poignées restent lisibles. Le panneau conserve sa densité sans éléments de période redondants. |
+| Popover Timeline | Sélection de période | Un clic sur Timeline ouvre directement le calendrier de plage et les molettes DE/À. |
+| Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **16 tests Vitest** validés après mise à jour du contrat UI. |
