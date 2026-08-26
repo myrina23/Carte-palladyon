@@ -1,5 +1,13 @@
 # Mise à jour Atlas Flux
 
+## Graphique, export et sources vérifiables
+
+- [x] Auditer la couverture de l’application par rapport aux deux documents transmis.
+- [x] Ajouter une chronologie bilatérale dans le comparateur.
+- [x] Ajouter un export CSV et un rapport PDF du comparateur.
+- [x] Rendre cliquables les sources des arcs, pays et organisations.
+- [x] Vérifier les flux d’export, les liens externes et le rendu responsive.
+
 ## Comparateur diplomatique et légende
 
 - [x] Concevoir la sélection de deux pays et le résumé bilatéral des relations du corpus.

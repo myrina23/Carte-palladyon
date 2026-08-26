@@ -53,3 +53,18 @@ L’assertion levée dans l’initialisation de `ScatterplotLayer` vérifie qu�
 | Recherche | Référentiel Banque mondiale et organisations du corpus | Chercher les pays et organisations disponibles ; une sélection mettra l’acteur et ses liens en avant. |
 
 Le mode globe doit être compris comme une visualisation exploratoire des relations structurées dans le corpus fourni. Chaque relation conserve une date de début, une date de fin éventuelle et un type pour le filtrage ; elle n’est pas présentée comme une assertion exhaustive sur les relations internationales.
+
+## Audit de couverture des documents — état actuel
+
+| Exigence des documents | État | Commentaire |
+| --- | --- | --- |
+| Carte 2D, globe 3D, pays cliquables, panneaux contextuels | **Livré** | Les vues 2D/3D, le survol, la sélection et les fiches acteurs sont disponibles. |
+| Organisations, recherche par acteur, timeline | **Livré** | Le corpus comporte des organisations, la recherche identifie pays et organisations, et la timeline filtre les relations. |
+| Arcs typés, colorés et filtrables | **Livré** | Les arcs sont animés, filtrables par couleur/type et donnent accès à une fiche relationnelle. |
+| Comparaison bilatérale | **Livré** | Deux pays peuvent être sélectionnés afin de lister les relations actives du corpus. |
+| Sources cliquables et export | **En cours** | Les sources sont identifiées dans les données ; liens cliquables, CSV et rapport PDF sont ajoutés dans l’itération actuelle. |
+| Toutes les typologies de lien, échelles fines et statuts internationaux | **À structurer** | Le corpus n’implémente actuellement que quatre types de lien et une granularité régionale simplifiée. |
+| Ajout de relation, validation éditoriale, JSON scénarisé, veille RSS | **À concevoir** | Ces fonctions exigent un back-office, une base de données et une gouvernance de contenu. |
+| OrbitView, FirstPersonView, comparaison en écran scindé, extensions GPU avancées | **À planifier** | Ces modules ne font pas partie du MVP actuel ; ils sont pertinents pour des jeux de données substantiels et des scénarios spécialisés. |
+
+Le constat est donc : les **fondations cartographiques et exploratoires** demandées sont en place, mais les fonctions de contribution, d’édition, de validation documentaire et certains modes spécialisés restent à mettre en œuvre avant de pouvoir considérer l’ensemble des deux documents comme couvert.
