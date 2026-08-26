@@ -21,6 +21,7 @@ import "./relations.css";
 import "./timeline-refinement.css";
 import "./timeline-segment.css";
 import "./palladyon-adoption.css";
+import "./palladyon-hotfix.css";
 import {
   Activity,
   ArrowUpRight,

@@ -87,3 +87,12 @@
 | Compatibilité | Bureau 1440 × 900 et mobile 375 × 812 | Les toggles et les poignées restent lisibles ; les repères explicites garantissent la visibilité des deux bornes sur mobile. |
 | Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **16 tests Vitest** validés, dont les contrats d’adoption des primitives Palladyon. |
 | Extensions recommandées | Composants Palladyon à envisager | Le `Dock` pourrait remplacer la barre d’actions basse ; `MorphingPopover` conviendrait aux fiches de relations ; `ScrollArea` peut servir aux longues listes de sources si leur volume augmente. |
+
+## Correctifs visuels Palladyon
+
+| Vérification | Résultat |
+| --- | --- |
+| Timeline à deux poignées | Les pseudo-poignées de secours ont été supprimées : seules les deux poignées réelles du Slider restent visibles. |
+| Toggles de typologie | Le conteneur clippe désormais la pastille interne ; le point blanc ne déborde plus hors de l’interrupteur. |
+| Surface du panneau | La grille de liens adopte une surface bleu-verre translucide cohérente avec les filtres au lieu d’un fond visuellement noir. |
+| Validation | Captures bureau et mobile contrôlées ; `pnpm check` et **16 tests Vitest** validés. |

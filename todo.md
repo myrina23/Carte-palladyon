@@ -70,6 +70,9 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Supprimer la poignée visuelle doublonnée de la timeline Palladyon.
+- [x] Corriger le fond noir incohérent introduit dans le panneau de filtres.
+- [x] Contenir les pastilles des toggles Palladyon afin qu’aucun rond blanc ne déborde.
 - [x] Auditer l’archive Palladyon, identifier les composants compatibles et remplacer les équivalents Atlas Flux sans perdre les interactions existantes.
 - [x] Vérifier les remplacements Palladyon sur bureau et mobile, puis documenter les suggestions d’extension pertinentes.
 - [x] Harmoniser la scrollbar du panneau Filtres principaux avec le verre dépoli transparent.
