@@ -1,5 +1,20 @@
 # Mise à jour Atlas Flux
 
+## Fiches détaillées, sélections multiples et relevé fiable
+
+- [x] Remplacer la réglette latérale par trois boutons explicites : 2D, Globe et Tac.
+- [x] Ajouter des fiches pays à onglets Infos, Relations et Organisations selon l’exemple fourni.
+- [x] Ajouter une fiche relation structurée : type, période, échelle, intensité, résumé, historique, source et PDF.
+- [x] Rendre les régions et typologies sélectionnables en choix multiples avec état lisible.
+- [x] Finaliser la période avec affichage garanti JJ/MM/AAAA et un vrai sélecteur complémentaire de type molette/défilement ou équivalent conforme à la demande utilisateur.
+- [x] Implémenter ou prouver une transition de focus fluide en mode globe, puis revalider les parcours régionaux en 2D/globe/tactique.
+- [x] Faire progresser la comparaison automatiquement de A→B vers B→C au troisième clic pays.
+- [x] Corriger le relevé PDF pour capturer la carte visible et les filtres actifs de l’instant T.
+- [x] Ajouter un filtre Organisation avec le même focus que les régions et typologies.
+- [x] Permettre de nommer et enregistrer localement un relevé filtré pour le retrouver dans la session.
+- [x] Ajouter une légende UCDP détaillant les seuils de gravité et leur lecture.
+- [x] Revalider explicitement les exports et interactions bureau/mobile après preuve navigateur de l’export PDF cartographique réel.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.
