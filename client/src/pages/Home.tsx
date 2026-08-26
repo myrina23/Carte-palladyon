@@ -19,6 +19,7 @@ import {
   Database,
   ExternalLink,
   Filter,
+  GitCompareArrows,
   Globe2,
   Layers3,
   LocateFixed,
@@ -77,6 +78,7 @@ type Relation = {
   start: number;
   end?: number;
   detail: string;
+  provenance?: string;
 };
 
 type ViewConfig = { id: ViewId; label: string; short: string; longitude: number; latitude: number; zoom: number };
@@ -88,16 +90,16 @@ const WORLD_BANK_API = "https://api.worldbank.org/v2";
 const WORLD_BOUNDARIES = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson";
 
 const INDICATORS: Array<{ id: IndicatorId; label: string; compact: string; sourceLabel: string; apiCode: string; color: [number, number, number, number] }> = [
-  { id: "gdp", label: "Puissance économique", compact: "PIB", sourceLabel: "PIB, dollars courants", apiCode: "NY.GDP.MKTP.CD", color: [255, 107, 53, 226] },
-  { id: "population", label: "Démographie", compact: "POP", sourceLabel: "Population totale", apiCode: "SP.POP.TOTL", color: [73, 180, 169, 220] },
-  { id: "defense", label: "Effort de défense", compact: "DEF", sourceLabel: "Dépenses militaires (% PIB)", apiCode: "MS.MIL.XPND.GD.ZS", color: [242, 194, 78, 230] },
+  { id: "gdp", label: "Puissance économique", compact: "PIB", sourceLabel: "PIB, dollars courants", apiCode: "NY.GDP.MKTP.CD", color: [89, 151, 146, 214] },
+  { id: "population", label: "Démographie", compact: "POP", sourceLabel: "Population totale", apiCode: "SP.POP.TOTL", color: [224, 188, 106, 210] },
+  { id: "defense", label: "Effort de défense", compact: "DEF", sourceLabel: "Dépenses militaires (% PIB)", apiCode: "MS.MIL.XPND.GD.ZS", color: [255, 107, 53, 230] },
 ];
 
-const RELATION_TYPES: Array<{ id: RelationType; label: string; color: [number, number, number] }> = [
-  { id: "geopolitique", label: "Géopolitique", color: [255, 107, 53] },
-  { id: "militaire", label: "Militaire", color: [239, 86, 78] },
-  { id: "economique", label: "Économique", color: [242, 194, 78] },
-  { id: "historique", label: "Historique", color: [165, 117, 236] },
+const RELATION_TYPES: Array<{ id: RelationType; label: string; short: string; color: [number, number, number] }> = [
+  { id: "geopolitique", label: "Géopolitique", short: "GÉO", color: [255, 107, 53] },
+  { id: "militaire", label: "Militaire", short: "MIL", color: [239, 86, 78] },
+  { id: "economique", label: "Économique", short: "ÉCO", color: [242, 194, 78] },
+  { id: "historique", label: "Historique", short: "HIS", color: [165, 117, 236] },
 ];
 
 const VIEWS: ViewConfig[] = [
@@ -121,14 +123,14 @@ const ORGANIZATIONS: Organization[] = [
 
 /* Corpus initial : exemples du document de classification transmis, conçus pour tester les filtres de type et de période. */
 const RELATIONS: Relation[] = [
-  { id: "uk-india-history", source: { id: "GBR", name: "Royaume-Uni", position: [-0.1278, 51.5074] }, target: { id: "IND", name: "Inde", position: [77.209, 28.6139] }, type: "historique", title: "Empire britannique", start: 1858, end: 1947, detail: "Relation historique citée dans le système de classification : période de l’Empire britannique en Inde." },
-  { id: "india-pakistan-kashmir", source: { id: "IND", name: "Inde", position: [77.209, 28.6139] }, target: { id: "PAK", name: "Pakistan", position: [73.0479, 33.6844] }, type: "geopolitique", title: "Conflit du Cachemire", start: 1947, detail: "Relation géopolitique citée dans le système de classification, associée au conflit du Cachemire." },
-  { id: "pakistan-china-cpec", source: { id: "PAK", name: "Pakistan", position: [73.0479, 33.6844] }, target: { id: "CHN", name: "Chine", position: [116.4074, 39.9042] }, type: "militaire", title: "CPEC / coopération stratégique", start: 2015, detail: "Relation militaire et stratégique citée dans le système de classification, avec référence au CPEC." },
-  { id: "russia-syria-base", source: { id: "RUS", name: "Russie", position: [37.6173, 55.7558] }, target: { id: "SYR", name: "Syrie", position: [36.2765, 33.5138] }, type: "militaire", title: "Base navale et soutien", start: 2015, detail: "Relation militaire citée dans le système de classification : base navale et soutien au régime syrien." },
-  { id: "china-african-union", source: { id: "CHN", name: "Chine", position: [116.4074, 39.9042] }, target: { id: "AU", name: "Union africaine", position: [38.7578, 8.9806] }, type: "economique", title: "Nouvelles routes de la soie", start: 2010, detail: "Relation économique illustrant l’exemple Chine–Afrique fourni dans le système de classification." },
-  { id: "turkey-azerbaijan-alliance", source: { id: "TUR", name: "Turquie", position: [32.8597, 39.9334] }, target: { id: "AZE", name: "Azerbaïdjan", position: [49.8671, 40.4093] }, type: "militaire", title: "Alliance militaire", start: 1992, detail: "Relation militaire figurant dans le scénario de sélection de la Turquie du document de classification." },
-  { id: "turkey-greece-tensions", source: { id: "TUR", name: "Turquie", position: [32.8597, 39.9334] }, target: { id: "GRC", name: "Grèce", position: [23.7275, 37.9838] }, type: "geopolitique", title: "Tensions régionales", start: 1974, detail: "Relation géopolitique figurant dans le scénario de sélection de la Turquie du document de classification." },
-  { id: "turkey-nato", source: { id: "TUR", name: "Turquie", position: [32.8597, 39.9334] }, target: { id: "NATO", name: "OTAN", position: [4.3517, 50.8503] }, type: "militaire", title: "Relations OTAN", start: 1952, detail: "Relation multilatérale associée à l’OTAN, intégrée pour représenter les organisations dans l’outil interactif." },
+  { id: "uk-india-history", source: { id: "GBR", name: "Royaume-Uni", position: [-0.1278, 51.5074] }, target: { id: "IND", name: "Inde", position: [77.209, 28.6139] }, type: "historique", title: "Empire britannique", start: 1858, end: 1947, detail: "Relation historique citée dans le système de classification : période de l’Empire britannique en Inde.", provenance: "Système de classification transmis · exemple Royaume-Uni–Inde" },
+  { id: "india-pakistan-kashmir", source: { id: "IND", name: "Inde", position: [77.209, 28.6139] }, target: { id: "PAK", name: "Pakistan", position: [73.0479, 33.6844] }, type: "geopolitique", title: "Conflit du Cachemire", start: 1947, detail: "Relation géopolitique citée dans le système de classification, associée au conflit du Cachemire.", provenance: "Système de classification transmis · exemple Inde–Pakistan" },
+  { id: "pakistan-china-cpec", source: { id: "PAK", name: "Pakistan", position: [73.0479, 33.6844] }, target: { id: "CHN", name: "Chine", position: [116.4074, 39.9042] }, type: "militaire", title: "CPEC / coopération stratégique", start: 2015, detail: "Relation militaire et stratégique citée dans le système de classification, avec référence au CPEC.", provenance: "Système de classification transmis · exemple Pakistan–Chine" },
+  { id: "russia-syria-base", source: { id: "RUS", name: "Russie", position: [37.6173, 55.7558] }, target: { id: "SYR", name: "Syrie", position: [36.2765, 33.5138] }, type: "militaire", title: "Base navale et soutien", start: 2015, detail: "Relation militaire citée dans le système de classification : base navale et soutien au régime syrien.", provenance: "Système de classification transmis · exemple Russie–Syrie" },
+  { id: "china-african-union", source: { id: "CHN", name: "Chine", position: [116.4074, 39.9042] }, target: { id: "AU", name: "Union africaine", position: [38.7578, 8.9806] }, type: "economique", title: "Nouvelles routes de la soie", start: 2010, detail: "Relation économique illustrant l’exemple Chine–Afrique fourni dans le système de classification.", provenance: "Système de classification transmis · exemple Chine–Afrique" },
+  { id: "turkey-azerbaijan-alliance", source: { id: "TUR", name: "Turquie", position: [32.8597, 39.9334] }, target: { id: "AZE", name: "Azerbaïdjan", position: [49.8671, 40.4093] }, type: "militaire", title: "Alliance militaire", start: 1992, detail: "Relation militaire figurant dans le scénario de sélection de la Turquie du document de classification.", provenance: "Système de classification transmis · scénario Turquie" },
+  { id: "turkey-greece-tensions", source: { id: "TUR", name: "Turquie", position: [32.8597, 39.9334] }, target: { id: "GRC", name: "Grèce", position: [23.7275, 37.9838] }, type: "geopolitique", title: "Tensions régionales", start: 1974, detail: "Relation géopolitique figurant dans le scénario de sélection de la Turquie du document de classification.", provenance: "Système de classification transmis · scénario Turquie" },
+  { id: "turkey-nato", source: { id: "TUR", name: "Turquie", position: [32.8597, 39.9334] }, target: { id: "NATO", name: "OTAN", position: [4.3517, 50.8503] }, type: "militaire", title: "Relations OTAN", start: 1952, detail: "Relation multilatérale associée à l’OTAN, intégrée pour représenter les organisations dans l’outil interactif.", provenance: "Système de classification transmis · scénario Turquie" },
 ];
 
 function normalizeRegion(region: string): RegionId {
@@ -170,6 +172,9 @@ export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState<CountryDatum | null>(null);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedRelation, setSelectedRelation] = useState<Relation | null>(null);
+  const [compareLeftId, setCompareLeftId] = useState("TUR");
+  const [compareRightId, setCompareRightId] = useState("GRC");
+  const [isComparatorOpen, setIsComparatorOpen] = useState(() => new URLSearchParams(window.location.search).get("compare") === "1");
   const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("search") ?? "");
   const [isLoading, setIsLoading] = useState(true);
   const [dataError, setDataError] = useState(false);
@@ -235,6 +240,9 @@ export default function Home() {
 
   const activeRelations = useMemo(() => RELATIONS.filter((relation) => relation.start <= timelineYear && (relation.end === undefined || relation.end >= timelineYear) && visibleRelationTypes[relation.type]).filter((relation) => !selectedActorId || relation.source.id === selectedActorId || relation.target.id === selectedActorId), [timelineYear, visibleRelationTypes, selectedActorId]);
   const selectedOrganization = ORGANIZATIONS.find((organization) => organization.id === selectedActorId) ?? null;
+  const compareLeft = countries.find((country) => country.iso3 === compareLeftId) ?? null;
+  const compareRight = countries.find((country) => country.iso3 === compareRightId) ?? null;
+  const bilateralRelations = RELATIONS.filter((relation) => relation.start <= timelineYear && (relation.end === undefined || relation.end >= timelineYear) && ((relation.source.id === compareLeftId && relation.target.id === compareRightId) || (relation.source.id === compareRightId && relation.target.id === compareLeftId)));
 
   const searchResults = useMemo<SearchEntry[]>(() => {
     const query = searchQuery.trim().toLocaleLowerCase("fr");
@@ -336,7 +344,7 @@ export default function Home() {
   function tooltipFor(object: unknown, layerId?: string) {
     if (layerId?.startsWith("geopolitical-arcs")) {
       const relation = object as Relation;
-      return `${relation.source.name} → ${relation.target.name}\n${relation.title} · ${relation.start}${relation.end ? `–${relation.end}` : "–aujourd’hui"}`;
+      return `${relation.source.name} → ${relation.target.name}\n${relation.title} · ${relation.type} · ${relation.start}${relation.end ? `–${relation.end}` : "–aujourd’hui"}\n${relation.detail}\nSource : ${relation.provenance ?? "Système de classification transmis"}`;
     }
     if (layerId?.startsWith("world-organizations")) {
       const organization = object as Organization;
@@ -393,15 +401,17 @@ export default function Home() {
 
           <section className="world-filter-panel intro-animate delay-1" aria-label="Filtres d’indicateurs"><div className="world-filter-title"><Filter size={15} aria-hidden="true" /><span>INDICATEURS</span></div><div className="filter-group"><p>PÉRIODE STATISTIQUE</p><div className="filter-pills">{INDICATOR_YEARS.map((year) => <button key={year} type="button" className={indicatorYear === year ? "is-selected" : ""} onClick={() => setIndicatorYear(year)}>{year}</button>)}</div></div><div className="filter-group"><p>RÉGION</p><div className="filter-pills region-pills">{REGION_FILTERS.map((region) => <button key={region.id} type="button" className={activeRegion === region.id ? "is-selected" : ""} onClick={() => { setActiveRegion(region.id); setSelectedCountry(null); }}>{region.label}</button>)}</div></div><p className="filter-status">{isLoading ? "Lecture des données…" : `${filteredCount} pays disponibles`}</p></section>
 
-          <section className="world-layer-panel intro-animate delay-2" aria-label="Calques et relations"><div className="layer-panel-heading"><Layers3 size={15} aria-hidden="true" /><span>CALQUES ACTIFS</span><b>{String(visibleIndicatorCount).padStart(2, "0")}</b></div>{INDICATORS.map((indicator) => <button key={indicator.id} data-layer={indicator.compact} className={`world-layer-button ${visibleLayers[indicator.id] ? "is-active" : ""}`} type="button" onClick={() => toggleLayer(indicator.id)} aria-pressed={visibleLayers[indicator.id]}><span className="world-layer-dot" style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} aria-hidden="true" /><span><b>{indicator.label}</b><small>{indicator.sourceLabel}</small></span>{visibleLayers[indicator.id] && <Check size={14} aria-hidden="true" />}</button>)}<div className="relation-filter-heading"><Activity size={14} aria-hidden="true" /><span>RELATIONS / {activeRelations.length}</span></div><div className="relation-type-grid">{RELATION_TYPES.map((type) => <button key={type.id} type="button" onClick={() => toggleRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span></button>)}</div></section>
+          <section className="world-layer-panel intro-animate delay-2" aria-label="Calques et relations"><div className="layer-panel-heading"><Layers3 size={15} aria-hidden="true" /><span>CALQUES ACTIFS</span><b>{String(visibleIndicatorCount).padStart(2, "0")}</b></div>{INDICATORS.map((indicator) => <button key={indicator.id} data-layer={indicator.compact} className={`world-layer-button ${visibleLayers[indicator.id] ? "is-active" : ""}`} type="button" onClick={() => toggleLayer(indicator.id)} aria-pressed={visibleLayers[indicator.id]}><span className="world-layer-dot" style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} aria-hidden="true" /><span><b>{indicator.label}</b><small>{indicator.sourceLabel}</small></span>{visibleLayers[indicator.id] && <Check size={14} aria-hidden="true" />}</button>)}<div className="relation-filter-heading"><Activity size={14} aria-hidden="true" /><span>LÉGENDE INTERACTIVE / {activeRelations.length}</span></div><div className="relation-type-grid">{RELATION_TYPES.map((type) => <button key={type.id} data-relation={type.short} type="button" onClick={() => toggleRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span><em>{visibleRelationTypes[type.id] ? "visible" : "masqué"}</em></button>)}</div></section>
 
           <section className="relation-timeline" aria-label="Timeline des relations"><div><Clock3 size={15} aria-hidden="true" /><span>TIMELINE</span></div><button type="button" onClick={() => stepTimeline(-1)} aria-label="Année précédente"><ChevronLeft size={16} /></button><input type="range" min="1858" max="2025" value={timelineYear} onChange={(event) => setTimelineYear(Number(event.target.value))} aria-label="Année des relations" /><button type="button" onClick={() => stepTimeline(1)} aria-label="Année suivante"><ChevronRight size={16} /></button><strong>{timelineYear}</strong><p>{activeRelations.length} liens actifs</p></section>
 
           <aside className={`world-detail-panel ${selectedCountry || selectedOrganization ? "is-open" : ""}`} aria-live="polite" aria-label="Fiche acteur"><button className="detail-close" type="button" onClick={() => { setSelectedCountry(null); setSelectedActorId(null); }} aria-label="Fermer la fiche"><X size={17} /></button>{selectedCountry && <><p className="eyebrow"><MapPin size={14} aria-hidden="true" /> FICHE PAYS / {selectedCountry.iso3}</p><h2>{selectedCountry.name}</h2><p className="country-capital">{selectedCountry.capital ? `Capitale : ${selectedCountry.capital}` : "Capitale non renseignée"}</p><div className="country-metrics">{INDICATORS.map((indicator) => <div key={indicator.id}><span style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} /><p>{indicator.compact}</p><strong>{formatMetric(indicator.id, selectedCountry.indicators[indicator.id][indicatorYear])}</strong></div>)}</div><p className="country-note">{activeRelations.length} relation{activeRelations.length > 1 ? "s" : ""} visible{activeRelations.length > 1 ? "s" : ""} à la date sélectionnée, parmi le corpus de classification.</p><a className="detail-link" href={`https://data.worldbank.org/country/${selectedCountry.iso2.toLowerCase()}`} target="_blank" rel="noreferrer">Voir la fiche Banque mondiale <ExternalLink size={14} aria-hidden="true" /></a></>}{selectedOrganization && <><p className="eyebrow"><Building2 size={14} aria-hidden="true" /> ORGANISATION</p><h2>{selectedOrganization.acronym}</h2><p className="country-capital">{selectedOrganization.name}</p><div className="organization-stat"><strong>{activeRelations.length}</strong><span>liens actifs<br />dans le corpus</span></div><p className="country-note">{selectedOrganization.description}</p></>}</aside>
 
-          <aside className={`world-relation-panel ${selectedRelation ? "is-open" : ""}`} aria-live="polite" aria-label="Détail de la relation"><button className="detail-close" type="button" onClick={() => setSelectedRelation(null)} aria-label="Fermer le détail"><X size={17} /></button>{selectedRelation && <><p className="eyebrow"><Activity size={14} aria-hidden="true" /> RELATION {selectedRelation.type.toUpperCase()}</p><h3>{selectedRelation.source.name}<span>→</span>{selectedRelation.target.name}</h3><p className="relation-period">{selectedRelation.start}{selectedRelation.end ? ` — ${selectedRelation.end}` : " — aujourd’hui"}</p><h4>{selectedRelation.title}</h4><p>{selectedRelation.detail}</p><small>Provenance : système de classification transmis.</small></>}</aside>
+          <aside className={`world-relation-panel ${selectedRelation ? "is-open" : ""}`} aria-live="polite" aria-label="Détail de la relation"><button className="detail-close" type="button" onClick={() => setSelectedRelation(null)} aria-label="Fermer le détail"><X size={17} /></button>{selectedRelation && <><p className="eyebrow"><Activity size={14} aria-hidden="true" /> RELATION {selectedRelation.type.toUpperCase()}</p><h3>{selectedRelation.source.name}<span>→</span>{selectedRelation.target.name}</h3><p className="relation-period">{selectedRelation.start}{selectedRelation.end ? ` — ${selectedRelation.end}` : " — aujourd’hui"}</p><h4>{selectedRelation.title}</h4><p>{selectedRelation.detail}</p><small>Source : {selectedRelation.provenance ?? "Système de classification transmis"}</small></>}</aside>
 
-          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Vue monde</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
+          <aside className={`bilateral-comparator ${isComparatorOpen ? "is-open" : ""}`} aria-label="Comparateur bilatéral"><button className="detail-close" type="button" onClick={() => setIsComparatorOpen(false)} aria-label="Fermer le comparateur"><X size={17} /></button><p className="eyebrow"><GitCompareArrows size={14} aria-hidden="true" /> COMPARATEUR BILATÉRAL</p><h3>Deux pays,<br /><i>une relation</i>.</h3><div className="comparator-selects"><label><span>PAYS A</span><select value={compareLeftId} onChange={(event) => setCompareLeftId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label><span className="compare-arrow">↔</span><label><span>PAYS B</span><select value={compareRightId} onChange={(event) => setCompareRightId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label></div><div className="comparison-summary"><p>{compareLeft?.name ?? "Pays A"}<span>↔</span>{compareRight?.name ?? "Pays B"}</p>{bilateralRelations.length > 0 ? bilateralRelations.map((relation) => <article key={relation.id}><i style={{ backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><div><b>{relation.title}</b><small>{relation.type} · {relation.start}{relation.end ? `–${relation.end}` : "–aujourd’hui"}</small><span>{relation.detail}</span></div></article>) : <div className="comparison-empty">Aucune relation active de ce corpus pour la période sélectionnée.</div>}</div><button className="comparison-focus" type="button" onClick={() => { if (compareLeft && compareRight) { setSelectedActorId(null); setFocusView({ longitude: (compareLeft.position[0] + compareRight.position[0]) / 2, latitude: (compareLeft.position[1] + compareRight.position[1]) / 2, zoom: displayMode === "globe" ? 0.65 : 2.2 }); setViewKey((key) => key + 1); } }}><LocateFixed size={14} /> Cadrer les deux pays</button></aside>
+
+          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Vue monde</Button><Button className="instrument-button compare-trigger" variant="outline" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
         </section>
       </main>
 

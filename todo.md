@@ -1,5 +1,12 @@
 # Mise à jour Atlas Flux
 
+## Comparateur diplomatique et légende
+
+- [x] Concevoir la sélection de deux pays et le résumé bilatéral des relations du corpus.
+- [x] Ajouter une infobulle d’arc avec type, période, détail et provenance.
+- [x] Ajouter une légende colorée servant également de filtre de relations.
+- [x] Vérifier le comparateur et les contrôles sur bureau et mobile.
+
 ## Relations géopolitiques interactives
 
 - [x] Structurer un premier jeu de relations documentées entre États et organisations.
