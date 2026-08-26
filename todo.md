@@ -1,5 +1,13 @@
 # Mise à jour Atlas Flux
 
+## Réseau Wikidata et gravité des conflits
+
+- [x] Résoudre les URI Wikidata du fichier en libellés d’acteurs et types de relations.
+- [x] Étendre l’extrait UCDP avec davantage de cellules de 2020 à 2025.
+- [x] Ajouter un filtre de gravité sur les décès estimés UCDP.
+- [x] Exposer la provenance des relations Wikidata et des cellules UCDP.
+- [x] Vérifier la carte, les filtres et le rendu responsive.
+
 ## Données de conflit et vue tactique
 
 - [x] Identifier le format, les champs, la période et la provenance du fichier transmis.

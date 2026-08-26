@@ -89,3 +89,12 @@ Le fichier `$RA79JCP.gz` est une archive gzip de **4,37 Mo décompressés** dont
 | Les entités sont des URI Wikidata sans libellés locaux. | L’intégration nécessitera un sous-ensemble associé à des identifiants et noms d’acteurs vérifiables. |
 
 Le calque de chaleur reste donc explicitement un **signal du corpus**, tandis que le fichier transmis servira de base de relations structurées et de provenance Wikidata.
+
+## Enrichissement Wikidata et UCDP — 26 août 2026
+
+| Jeu de données | Méthode d’intégration | Périmètre affiché |
+| --- | --- | --- |
+| Export Wikidata transmis | Résolution des URI d’un noyau d’acteurs avec l’API Wikidata, puis conservation des propriétés P47 (*partage une frontière avec*) et P463 (*membre de*). | Quatorze liens nommés entre États et organisations, chacun relié à sa fiche Wikidata. |
+| UCDP GED v26.1 | Agrégation spatiale par cellule de 0,5° et sélection des douze cellules ayant le plus de décès estimés chaque année. | 72 cellules, de 2020 à 2025, avec année, nombre d’événements et colonne UCDP `best` agrégée. |
+
+Le filtre de gravité applique des seuils de **500**, **2 000** ou **10 000** décès estimés à l’extrait UCDP affiché. Ces valeurs servent à restreindre les cellules de visualisation ; elles ne constituent ni une qualification juridique, ni une mesure exhaustive de la violence mondiale.

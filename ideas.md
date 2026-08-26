@@ -73,3 +73,6 @@ Le mot-symbole utilise des capitales compactes espacées, accompagnées d’une 
 * **Orange Méridien** reste réservé aux sélections actives, trajectoires prioritaires, actions principales et chiffres clés ; les couches secondaires se répartissent entre vert d’eau, jaune doux et neutres minéraux.
 * Chaque section importante doit intégrer au moins une primitive cartographique Atlas Flux : repères de coordonnées, contour interrompu, segment de rose angulaire, label marginal ou règle graduée.
 * Les sections claires doivent rester des **rapports de terrain imprimés** du même observatoire, avec trames, graduations et repères géographiques, plutôt que des blocs éditoriaux génériques.
+* La rose des vents Atlas Flux devient un repère d’activation répété dans les panneaux, sélections et balises de relevé, au-delà du seul logotype.
+* Les actions restent en français observationnel : elles proposent de recentrer, comparer ou produire un relevé, plutôt que d’employer des libellés utilitaires génériques.
+* La carte conserve la priorité visuelle ; textes et contrôles doivent se lire comme des annotations instrumentales posées sur le territoire.
