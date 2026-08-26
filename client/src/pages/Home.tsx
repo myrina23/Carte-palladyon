@@ -163,6 +163,32 @@ const REGION_FILTERS: Array<{ id: RegionId; label: string }> = [
   { id: "all", label: "Tous" }, { id: "europe", label: "Europe" }, { id: "americas", label: "Amériques" }, { id: "africa", label: "Afrique" }, { id: "asia", label: "Asie-Pac." }, { id: "mena", label: "M.-Orient" },
 ];
 
+const REGION_FOCUSES: Record<RegionId, Pick<ViewConfig, "longitude" | "latitude" | "zoom">> = {
+  all: { longitude: 9, latitude: 22, zoom: 1.15 },
+  europe: { longitude: 14, latitude: 51, zoom: 3.05 },
+  americas: { longitude: -82, latitude: 14, zoom: 2.05 },
+  africa: { longitude: 20, latitude: 5, zoom: 2.3 },
+  asia: { longitude: 115, latitude: 22, zoom: 2.15 },
+  mena: { longitude: 40, latitude: 29, zoom: 3.1 },
+};
+
+function primaryUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedRegion = params.get("region");
+  const requestedType = params.get("type");
+  return {
+    region: REGION_FILTERS.some((filter) => filter.id === requestedRegion) ? requestedRegion as RegionId : "all" as RegionId,
+    type: RELATION_TYPES.some((type) => type.id === requestedType) ? requestedType as RelationType : null,
+  };
+}
+
+function analysisModeForType(type: RelationType | null): AnalysisMode {
+  if (type === "militaire" || type === "securitaire") return "conflict";
+  if (type === "historique") return "evolution";
+  if (type === "juridique") return "multilateral";
+  return "network";
+}
+
 const ANALYSIS_ZONES: Array<{ id: string; label: string; region: RegionId; position: [number, number] }> = [
   { id: "ZONE_EUROPE", label: "Zone européenne", region: "europe", position: [14, 51] },
   { id: "ZONE_AMERICAS", label: "Zone Amériques", region: "americas", position: [-82, 14] },
@@ -300,9 +326,9 @@ export default function Home() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() => { const mode = new URLSearchParams(window.location.search).get("mode"); return mode === "globe" || mode === "tactical" ? mode : "map"; });
   const [indicatorYear, setIndicatorYear] = useState<number>(2024);
   const [timelineYear, setTimelineYear] = useState<number>(2024);
-  const [activeRegion, setActiveRegion] = useState<RegionId>("all");
-  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(() => { const mode = new URLSearchParams(window.location.search).get("analysis"); return mode === "conflict" || mode === "evolution" || mode === "multilateral" ? mode : "network"; });
-  const [selectedZone, setSelectedZone] = useState<RegionId | null>(null);
+  const [activeRegion, setActiveRegion] = useState<RegionId>(() => primaryUrlState().region);
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(() => { const mode = new URLSearchParams(window.location.search).get("analysis"); return mode === "conflict" || mode === "evolution" || mode === "multilateral" ? mode : analysisModeForType(primaryUrlState().type); });
+  const [selectedZone, setSelectedZone] = useState<RegionId | null>(() => primaryUrlState().region === "all" ? null : primaryUrlState().region);
   const [showConflictHeat, setShowConflictHeat] = useState(() => new URLSearchParams(window.location.search).get("analysis") === "conflict");
   const [gravityThreshold, setGravityThreshold] = useState(() => { const threshold = Number(new URLSearchParams(window.location.search).get("gravity") ?? "0"); return GRAVITY_FILTERS.some((filter) => filter.value === threshold) ? threshold : 0; });
   const [timelinePreviewYear, setTimelinePreviewYear] = useState<number | null>(null);
@@ -311,7 +337,7 @@ export default function Home() {
   const [evolutionEmphasis, setEvolutionEmphasis] = useState<"delta" | "start" | "end">("delta");
   const [isSplitComparison, setIsSplitComparison] = useState(() => new URLSearchParams(window.location.search).get("split") === "1");
   const [splitViewState, setSplitViewState] = useState({ longitude: 9, latitude: 22, zoom: 1.15, bearing: 0, pitch: 0 });
-  const [visibleRelationTypes, setVisibleRelationTypes] = useState<Record<RelationType, boolean>>(() => Object.fromEntries(RELATION_TYPES.map((type) => [type.id, true])) as Record<RelationType, boolean>);
+  const [visibleRelationTypes, setVisibleRelationTypes] = useState<Record<RelationType, boolean>>(() => { const type = primaryUrlState().type; return Object.fromEntries(RELATION_TYPES.map((item) => [item.id, type ? item.id === type : true])) as Record<RelationType, boolean>; });
   const [selectedCountry, setSelectedCountry] = useState<CountryDatum | null>(null);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(() => new URLSearchParams(window.location.search).get("actor"));
   const [selectedRelation, setSelectedRelation] = useState<Relation | null>(null);
@@ -329,6 +355,7 @@ export default function Home() {
   const [viewKey, setViewKey] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
   const mapRef = useRef<any>(null);
+  const restoredPrimaryFilterFocus = useRef(false);
   const [isContributionOpen, setIsContributionOpen] = useState(() => new URLSearchParams(window.location.search).get("contribute") === "1");
   const [proposalForm, setProposalForm] = useState({ sourceActor: "", targetActor: "", relationType: "geopolitique", title: "", detail: "", sourceUrl: "", startYear: "", endYear: "" });
   const utils = trpc.useUtils();
@@ -413,6 +440,13 @@ export default function Home() {
   const allCountries = useMemo(() => [...countries, ...territoryActors], [countries, territoryActors]);
   const filteredCountries = useMemo(() => allCountries.filter((country) => activeRegion === "all" || country.region === activeRegion), [allCountries, activeRegion]);
   const filteredCount = filteredCountries.length;
+
+  useEffect(() => {
+    if (restoredPrimaryFilterFocus.current || !allCountries.length) return;
+    restoredPrimaryFilterFocus.current = true;
+    const primary = primaryUrlState();
+    if (primary.region !== "all" || primary.type) applyPrimaryFilterFocus({ region: primary.region, ...(primary.type ? { type: primary.type } : {}) });
+  }, [allCountries.length]);
 
   const scopedRelations = useMemo(() => RELATIONS.filter((relation) => visibleRelationTypes[relation.type]).filter((relation) => !selectedActorId || relation.source.id === selectedActorId || relation.target.id === selectedActorId).filter((relation) => !selectedZone || allCountries.find((country) => country.iso3 === relation.source.id)?.region === selectedZone || allCountries.find((country) => country.iso3 === relation.target.id)?.region === selectedZone).filter((relation) => analysisMode !== "multilateral" || ORGANIZATIONS.some((organization) => organization.id === relation.source.id || organization.id === relation.target.id)), [allCountries, analysisMode, visibleRelationTypes, selectedActorId, selectedZone]);
   const evolutionStartRelations = useMemo(() => scopedRelations.filter((relation) => isRelationActiveAt(relation, evolutionStart)), [scopedRelations, evolutionStart]);
@@ -649,22 +683,46 @@ export default function Home() {
     proposalMutation.mutate({ sourceActor: proposalForm.sourceActor, targetActor: proposalForm.targetActor, relationType: proposalForm.relationType, title: proposalForm.title, detail: proposalForm.detail, sourceUrl: proposalForm.sourceUrl, ...(proposalForm.startYear ? { startYear: Number(proposalForm.startYear) } : {}), ...(proposalForm.endYear ? { endYear: Number(proposalForm.endYear) } : {}) });
   }
 
-  function toggleRelationType(id: RelationType) { setVisibleRelationTypes((current) => ({ ...current, [id]: !current[id] })); }
+  function applyPrimaryFilterFocus(filter: { region?: RegionId; type?: RelationType }) {
+    const nextRegion = filter.region ?? activeRegion;
+    if (filter.region) {
+      setActiveRegion(filter.region);
+      setSelectedZone(filter.region === "all" ? null : filter.region);
+      setSelectedActorId(null);
+      setSelectedCountry(null);
+      setSelectedRelation(null);
+    }
+    if (filter.type) {
+      setVisibleRelationTypes(() => Object.fromEntries(RELATION_TYPES.map((type) => [type.id, type.id === filter.type])) as Record<RelationType, boolean>);
+      setSelectedLegendType(filter.type);
+      const nextMode = analysisModeForType(filter.type);
+      setAnalysisMode(nextMode);
+      setShowConflictHeat(nextMode === "conflict");
+      if (nextMode === "evolution") setTimelinePreviewYear(timelineYear);
+      const typedRelations = RELATIONS.filter((relation) => relation.type === filter.type && (nextRegion === "all" || allCountries.find((country) => country.iso3 === relation.source.id)?.region === nextRegion || allCountries.find((country) => country.iso3 === relation.target.id)?.region === nextRegion));
+      const positions = typedRelations.flatMap((relation) => [relation.source.position, relation.target.position]);
+      if (positions.length) {
+        setFocusView({ longitude: positions.reduce((total, position) => total + position[0], 0) / positions.length, latitude: positions.reduce((total, position) => total + position[1], 0) / positions.length, zoom: Math.max(1.45, nextRegion === "all" ? 1.85 : REGION_FOCUSES[nextRegion].zoom) });
+      } else {
+        setFocusView(REGION_FOCUSES[nextRegion]);
+      }
+    } else if (filter.region) {
+      setFocusView(REGION_FOCUSES[filter.region]);
+    }
+    const currentUrl = new URL(window.location.href);
+    const nextType = filter.type ?? RELATION_TYPES.find((type) => visibleRelationTypes[type.id] && RELATION_TYPES.filter((entry) => visibleRelationTypes[entry.id]).length === 1)?.id;
+    if (nextRegion === "all") currentUrl.searchParams.delete("region"); else currentUrl.searchParams.set("region", nextRegion);
+    if (nextType) currentUrl.searchParams.set("type", nextType); else currentUrl.searchParams.delete("type");
+    window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+    setViewKey((key) => key + 1);
+  }
+
+  function toggleRelationType(id: RelationType) { applyPrimaryFilterFocus({ type: id }); }
   function toggleDisplayMode(mode: DisplayMode) { setDisplayMode(mode); setFocusView(null); setViewKey((key) => key + 1); }
   function stepTimeline(amount: number) { setTimelineYear((year) => Math.max(1858, Math.min(2025, year + amount))); }
 
   function selectRelationType(id: RelationType) {
-    setVisibleRelationTypes(() => Object.fromEntries(RELATION_TYPES.map((type) => [type.id, type.id === id])) as Record<RelationType, boolean>);
-    setAnalysisMode(id === "militaire" || id === "securitaire" ? "conflict" : "network");
-    setShowConflictHeat(id === "militaire" || id === "securitaire");
-  }
-
-  function selectAnalysisMode(mode: AnalysisMode) {
-    setAnalysisMode(mode);
-    if (mode !== "conflict") setShowConflictHeat(false);
-    if (mode === "conflict") setShowConflictHeat(true);
-    if (mode === "multilateral") { setSelectedActorId(null); setSelectedZone(null); }
-    if (mode === "evolution") setTimelinePreviewYear(timelineYear);
+    applyPrimaryFilterFocus({ type: id });
   }
 
   function exportRelation(relation: Relation) {
@@ -706,6 +764,11 @@ export default function Home() {
   }
 
   function tooltipFor(object: unknown, layerId?: string) {
+    if (layerId?.startsWith("country-click-target")) {
+      const properties = (object as any)?.properties ?? {};
+      const name = properties.NAME_FR ?? properties.NAME ?? properties.ADMIN ?? "Pays";
+      return `${name}\nCliquer pour révéler son réseau ; cliquer un second acteur pour comparer.`;
+    }
     if (layerId?.startsWith("map-units")) {
       const properties = (object as any)?.properties ?? {};
       const name = properties.NAME_FR ?? properties.NAME ?? properties.GEOUNIT ?? "Unité cartographique";
@@ -788,15 +851,13 @@ export default function Home() {
 
           <section className="world-search" aria-label="Rechercher un acteur"><Search size={16} aria-hidden="true" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher un pays ou une organisation" aria-label="Rechercher un pays ou une organisation" />{searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Effacer la recherche"><X size={15} /></button>}{searchResults.length > 0 && <div className="search-results">{searchResults.map((entry) => <button key={entry.id} type="button" onClick={() => selectSearchEntry(entry)}><span className={entry.kind === "Organisation" ? "search-kind is-organization" : "search-kind"}>{entry.kind === "Organisation" ? <Building2 size={13} /> : <MapPin size={13} />}</span><span><b>{entry.label}</b><small>{entry.kind}</small></span></button>)}</div>}</section>
 
-          <section className="analysis-mode-panel" aria-label="Vues spécialisées"><p><span className="compass-state-marker" aria-hidden="true" /><Activity size={14} /> ANALYSE GUIDÉE</p><div><button type="button" className={analysisMode === "network" ? "is-active" : ""} onClick={() => selectAnalysisMode("network")}>Réseau</button><button type="button" className={analysisMode === "conflict" ? "is-active" : ""} onClick={() => selectAnalysisMode("conflict")}>Zones chaudes</button><button type="button" className={analysisMode === "evolution" ? "is-active" : ""} onClick={() => selectAnalysisMode("evolution")}>Évolution</button><button type="button" className={analysisMode === "multilateral" ? "is-active" : ""} onClick={() => selectAnalysisMode("multilateral")}>Multilatéral</button></div>{analysisMode === "conflict" && <small><a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noreferrer">UCDP GED v26.1</a> · {UCDP_GED_PERIOD} · agrégation de cellules de 0,5° selon les décès estimés.</small>}{analysisMode === "evolution" && <div className="evolution-window"><label>DE <input type="number" min="1858" max={evolutionEnd} value={evolutionStart} onChange={(event) => setEvolutionStart(Number(event.target.value))} /></label><span>→</span><label>À <input type="number" min={evolutionStart} max="2025" value={evolutionEnd} onChange={(event) => setEvolutionEnd(Number(event.target.value))} /></label></div>}{selectedZone && <button type="button" className="zone-clear" onClick={() => { setSelectedZone(null); setActiveRegion("all"); }}>Zone : {ANALYSIS_ZONES.find((zone) => zone.region === selectedZone)?.label} <X size={12} /></button>}</section>
-
-          {analysisMode === "evolution" && <section className="evolution-comparison-panel" aria-label="Comparaison cartographique entre les dates A et B"><div><p><GitCompareArrows size={14} aria-hidden="true" /> COMPARAISON CARTOGRAPHIQUE</p><strong>{evolutionStart} <span>→</span> {evolutionEnd}</strong></div><div className="evolution-emphasis-controls" aria-label="Lecture de la comparaison"><button type="button" className={evolutionEmphasis === "start" ? "is-active" : ""} onClick={() => setEvolutionEmphasis("start")} aria-pressed={evolutionEmphasis === "start"}>A · {evolutionStart}</button><button type="button" className={evolutionEmphasis === "delta" ? "is-active" : ""} onClick={() => setEvolutionEmphasis("delta")} aria-pressed={evolutionEmphasis === "delta"}>Δ · écarts</button><button type="button" className={evolutionEmphasis === "end" ? "is-active" : ""} onClick={() => setEvolutionEmphasis("end")} aria-pressed={evolutionEmphasis === "end"}>B · {evolutionEnd}</button></div>{evolutionEmphasis === "delta" && <div className="evolution-delta-legend"><span><i className="is-persistent" />{evolutionCounts.persistent} continus</span><span><i className="is-appeared" />{evolutionCounts.appeared} apparus</span><span><i className="is-ended" />{evolutionCounts.ended} sortis</span></div>}<small>Les liens Wikidata non datés sont structurels ; ils restent hors comparaison chronologique.</small></section>}
+          {analysisMode === "evolution" && <section className="evolution-comparison-panel" aria-label="Comparaison cartographique entre les dates A et B"><div><p><GitCompareArrows size={14} aria-hidden="true" /> COMPARAISON CARTOGRAPHIQUE</p><strong>{evolutionStart} <span>→</span> {evolutionEnd}</strong></div><div className="evolution-window"><label>DE <input type="number" min="1858" max={evolutionEnd} value={evolutionStart} onChange={(event) => setEvolutionStart(Number(event.target.value))} /></label><span>→</span><label>À <input type="number" min={evolutionStart} max="2025" value={evolutionEnd} onChange={(event) => setEvolutionEnd(Number(event.target.value))} /></label></div><div className="evolution-emphasis-controls" aria-label="Lecture de la comparaison"><button type="button" className={evolutionEmphasis === "start" ? "is-active" : ""} onClick={() => setEvolutionEmphasis("start")} aria-pressed={evolutionEmphasis === "start"}>A · {evolutionStart}</button><button type="button" className={evolutionEmphasis === "delta" ? "is-active" : ""} onClick={() => setEvolutionEmphasis("delta")} aria-pressed={evolutionEmphasis === "delta"}>Δ · écarts</button><button type="button" className={evolutionEmphasis === "end" ? "is-active" : ""} onClick={() => setEvolutionEmphasis("end")} aria-pressed={evolutionEmphasis === "end"}>B · {evolutionEnd}</button></div>{evolutionEmphasis === "delta" && <div className="evolution-delta-legend"><span><i className="is-persistent" />{evolutionCounts.persistent} continus</span><span><i className="is-appeared" />{evolutionCounts.appeared} apparus</span><span><i className="is-ended" />{evolutionCounts.ended} sortis</span></div>}<small>Les liens Wikidata non datés sont structurels ; ils restent hors comparaison chronologique.</small></section>}
           {analysisMode === "evolution" && <button className="split-comparison-trigger" type="button" onClick={openSplitComparison}><GitCompareArrows size={15} /> Ouvrir la carte A/B</button>}
 
           <button className="contextual-legend-trigger" type="button" onClick={() => setSelectedLegendType((current) => current ?? RELATION_TYPES.find((type) => visibleRelationTypes[type.id])?.id ?? "geopolitique")} aria-expanded={selectedLegendType !== null}><CircleHelp size={15} aria-hidden="true" /> Décoder les typologies</button>
-          {selectedLegendType && (() => { const type = RELATION_TYPES.find((item) => item.id === selectedLegendType) ?? RELATION_TYPES[0]; const legend = RELATION_LEGENDS[type.id]; const property = type.id === "geopolitique" ? "P47" : type.id === "juridique" ? "P463" : null; return <aside className="contextual-legend-panel" aria-live="polite" aria-label={`Légende détaillée : ${type.label}`}><button className="detail-close" type="button" onClick={() => setSelectedLegendType(null)} aria-label="Fermer la légende"><X size={17} /></button><p className="eyebrow"><span style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /> LÉGENDE CONTEXTUELLE</p><h3>{type.label}</h3><p>{legend.definition}</p><div className="legend-reading"><b>Comment lire</b><span>{legend.reading}</span></div><div className="legend-cue"><MapPin size={13} aria-hidden="true" /><span><b>Repère associé</b>{legend.cue}</span></div>{property && <a className="relation-source-link" href={wikidataPropertyUrl(property)} target="_blank" rel="noreferrer">Wikidata · propriété {property} <ExternalLink size={13} /></a>}<div className="legend-type-options" aria-label="Choisir une typologie à expliquer">{RELATION_TYPES.map((item) => <button key={item.id} type="button" className={item.id === type.id ? "is-active" : ""} onClick={() => setSelectedLegendType(item.id)} aria-pressed={item.id === type.id}><i style={{ backgroundColor: `rgb(${item.color.join(" ")})` }} />{item.short}</button>)}</div></aside>; })()}
+          {selectedLegendType && (() => { const type = RELATION_TYPES.find((item) => item.id === selectedLegendType) ?? RELATION_TYPES[0]; const legend = RELATION_LEGENDS[type.id]; const property = type.id === "geopolitique" ? "P47" : type.id === "juridique" ? "P463" : null; return <aside className="contextual-legend-panel" aria-live="polite" aria-label={`Légende détaillée : ${type.label}`}><button className="detail-close" type="button" onClick={() => setSelectedLegendType(null)} aria-label="Fermer la légende"><X size={17} /></button><p className="eyebrow"><span style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /> LÉGENDE CONTEXTUELLE</p><h3>{type.label}</h3><p>{legend.definition}</p><div className="legend-reading"><b>Comment lire</b><span>{legend.reading}</span></div><div className="legend-cue"><MapPin size={13} aria-hidden="true" /><span><b>Repère associé</b>{legend.cue}</span></div>{property && <a className="relation-source-link" href={wikidataPropertyUrl(property)} target="_blank" rel="noreferrer">Wikidata · propriété {property} <ExternalLink size={13} /></a>}<div className="legend-type-options" aria-label="Choisir une typologie à expliquer">{RELATION_TYPES.map((item) => <button key={item.id} type="button" className={item.id === type.id ? "is-active" : ""} onClick={() => applyPrimaryFilterFocus({ type: item.id })} aria-pressed={item.id === type.id}><i style={{ backgroundColor: `rgb(${item.color.join(" ")})` }} />{item.short}</button>)}</div></aside>; })()}
 
-          <section className="world-filter-panel intro-animate delay-1" aria-label="Filtres principaux"><div className="world-filter-title"><span className="compass-state-marker" aria-hidden="true" /><Filter size={15} aria-hidden="true" /><span>FILTRES PRINCIPAUX</span></div><div className="filter-group"><p>RÉGION</p><div className="filter-pills region-pills">{REGION_FILTERS.map((region) => <button key={region.id} type="button" className={activeRegion === region.id ? "is-selected" : ""} onClick={() => { setActiveRegion(region.id); setSelectedCountry(null); }}>{region.label}</button>)}</div></div><div className="filter-group"><p>ANNÉE DE LECTURE</p><div className="filter-pills">{INDICATOR_YEARS.map((year) => <button key={year} type="button" className={timelineYear === year ? "is-selected" : ""} onClick={() => { setTimelineYear(year); setIndicatorYear(year); }}>{year}</button>)}</div></div><p className="filter-status">{isLoading ? "Lecture des acteurs…" : `${filteredCount} pays et territoires référencés`}</p></section>
+          <section className="world-filter-panel intro-animate delay-1" aria-label="Filtres principaux"><div className="world-filter-title"><span className="compass-state-marker" aria-hidden="true" /><Filter size={15} aria-hidden="true" /><span>FILTRES PRINCIPAUX</span></div><div className="filter-group"><p>RÉGION</p><div className="filter-pills region-pills">{REGION_FILTERS.map((region) => <button key={region.id} type="button" className={activeRegion === region.id ? "is-selected" : ""} onClick={() => applyPrimaryFilterFocus({ region: region.id })}>{region.label}</button>)}</div></div><div className="filter-group"><p>ANNÉE DE LECTURE</p><div className="filter-pills">{INDICATOR_YEARS.map((year) => <button key={year} type="button" className={timelineYear === year ? "is-selected" : ""} onClick={() => { setTimelineYear(year); setIndicatorYear(year); }}>{year}</button>)}</div></div><p className="filter-status">{isLoading ? "Lecture des acteurs…" : `${filteredCount} pays et territoires référencés`}</p></section>
 
           <section className="world-layer-panel relation-filter-panel intro-animate delay-2" aria-label="Filtre principal par typologie"><div className="layer-panel-heading"><span className="compass-state-marker" aria-hidden="true" /><Layers3 size={15} aria-hidden="true" /><span>TYPOLOGIES</span><b>{String(activeRelations.length).padStart(2, "0")}</b></div><p className="relation-filter-intro">Filtrer les liens cartographiés par nature de relation.</p><div className="relation-type-grid relation-type-grid-expanded">{RELATION_TYPES.map((type) => <button key={type.id} data-relation={type.short} type="button" onClick={() => selectRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span><em>{visibleRelationTypes[type.id] ? "actif" : ""}</em></button>)}</div><button type="button" className={`heatmap-toggle ${showConflictHeat ? "is-active" : ""}`} onClick={() => setShowConflictHeat((value) => !value)}><span /> Conflits UCDP GED <em>{UCDP_GED_PERIOD}</em></button>{showConflictHeat && <div className="gravity-filter"><p>GRAVITÉ · DÉCÈS ESTIMÉS</p><div>{GRAVITY_FILTERS.map((filter) => <button key={filter.value} type="button" className={gravityThreshold === filter.value ? "is-active" : ""} onClick={() => setGravityThreshold(filter.value)}>{filter.label}</button>)}</div><small>{conflictSignals.length} cellules visibles</small></div>}</section>
 

@@ -1,5 +1,15 @@
 # Mise à jour Atlas Flux
 
+## Focus unifié des filtres principaux
+
+- [x] Retirer le panneau Analyse guidée et ses contrôles devenus redondants.
+- [x] Appliquer un focus cartographique à chaque filtre régional.
+- [x] Appliquer un focus cartographique à chaque typologie de relation.
+- [x] Prévoir un contrat de focus réutilisable pour les futurs filtres principaux.
+- [x] Synchroniser les filtres principaux région et typologie dans des états URL partageables.
+- [x] Tester les états URL des nouveaux focus principaux sur bureau et mobile avant publication.
+- [x] Vérifier les vues, les états URL et le rendu bureau/mobile avant publication.
+
 ## Carte centrée acteur, comparaison directe et publication éditoriale
 
 - [x] Retirer les calques d’indicateurs de la carte et les consolider dans les fiches pays et organisations.
