@@ -119,12 +119,14 @@ const INDICATOR_YEARS = [2024, 2023, 2022] as const;
 const GRAVITY_FILTERS = [{ value: 0, label: "Tous" }, { value: 500, label: "500+" }, { value: 2000, label: "2 k+" }, { value: 10000, label: "10 k+" }];
 const ATLAS_DARK_VECTOR_STYLE = {
   version: 8,
+  sources: {},
   layers: [
     { id: "atlas-night", type: "background", paint: { "background-color": "#071424" } },
   ],
 } as const;
 const ATLAS_LIGHT_VECTOR_STYLE = {
   version: 8,
+  sources: {},
   layers: [
     { id: "atlas-day", type: "background", paint: { "background-color": "#e9f3f7" } },
   ],

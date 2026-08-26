@@ -70,6 +70,7 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Corriger le style MapLibre Atlas Flux afin qu’il déclare la propriété `sources` obligatoire et que la carte se charge après connexion.
 - [x] Personnaliser la scène cartographique Atlas Flux au-delà du style Carto générique : fond MapLibre dédié, continents Natural Earth et repères rendus par deck.gl.
 - [x] Ajouter un halo cyan focalisé derrière les arcs et nœuds tout en conservant le trait sémantique par typologie.
 - [x] Réduire les surfaces massives et adopter des panneaux compacts, très floutés et translucides inspirés du langage Apple.
