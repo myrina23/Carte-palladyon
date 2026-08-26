@@ -77,3 +77,15 @@ Le constat est donc : les **fondations cartographiques et exploratoires** demand
 | [API UCDP](https://ucdp.uu.se/apidocs/) | L’API expose les événements GED et prévoit des filtres de date et de géographie, mais l’accès automatisé requiert un jeton approuvé. | Ne pas intégrer un appel API non authentifié en production. Préparer l’interface et n’afficher une intensité que pour un extrait UCDP explicitement sourcé et daté. |
 
 Le calque sera étiqueté **« signaux de conflit du corpus »** tant qu’un extrait UCDP complet, versionné et approprié n’aura pas été ajouté. Il ne devra pas être présenté comme une mesure exhaustive ou actualisée de l’intensité de guerre mondiale.
+
+## Fichier transmis — identification
+
+Le fichier `$RA79JCP.gz` est une archive gzip de **4,37 Mo décompressés** dont le nom interne est `wikidata-palladyon-world-relations.json`. Il contient un résultat SPARQL Wikidata avec trois champs URI : `country`, `property` et `target`.
+
+| Constat | Conséquence d’intégration |
+| --- | --- |
+| Le contenu recense des relations Wikidata, notamment P47 (*partage une frontière avec*) et P463 (*membre de*). | Il peut enrichir la structure des réseaux et organisations. |
+| Le fichier ne contient ni coordonnées d’événements, ni date d’événement, ni nombre de victimes. | Il ne peut pas être utilisé pour chiffrer ou cartographier une **intensité de conflit UCDP**. |
+| Les entités sont des URI Wikidata sans libellés locaux. | L’intégration nécessitera un sous-ensemble associé à des identifiants et noms d’acteurs vérifiables. |
+
+Le calque de chaleur reste donc explicitement un **signal du corpus**, tandis que le fichier transmis servira de base de relations structurées et de provenance Wikidata.

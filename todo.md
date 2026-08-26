@@ -1,5 +1,13 @@
 # Mise à jour Atlas Flux
 
+## Données de conflit et vue tactique
+
+- [x] Identifier le format, les champs, la période et la provenance du fichier transmis.
+- [x] Préparer un extrait de données de conflit exploitable dans le navigateur.
+- [x] Remplacer les signaux de corpus par les données sourcées disponibles.
+- [x] Ajouter une vue tactique 3D locale depuis un pays, une organisation ou une zone.
+- [x] Vérifier la précision de la chaleur, la vue tactique et le rendu responsive.
+
 ## Analyse guidée et vues spécialisées
 
 - [x] Identifier les sources réutilisables pour les zones de conflit et définir leurs limites de représentation.

@@ -35,11 +35,12 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { UCDP_CONFLICT_CELLS, UCDP_GED_PERIOD, UCDP_GED_SOURCE, type UcdpConflictCell } from "@/data/ucdpConflictData";
 
 type IndicatorId = "gdp" | "population" | "defense";
 type RegionId = "all" | "europe" | "americas" | "africa" | "asia" | "mena";
 type ViewId = "world" | "europe" | "americas" | "indoPacific" | "africaMena";
-type DisplayMode = "map" | "globe";
+type DisplayMode = "map" | "globe" | "tactical";
 type AnalysisMode = "network" | "conflict" | "evolution" | "multilateral";
 type RelationType = "geopolitique" | "militaire" | "economique" | "commercial" | "technologique" | "scientifique" | "culturel" | "historique" | "migratoire" | "ressources" | "securitaire" | "ideologique" | "financier" | "numerique" | "juridique";
 
@@ -89,7 +90,6 @@ type Relation = {
 
 type ViewConfig = { id: ViewId; label: string; short: string; longitude: number; latitude: number; zoom: number };
 type SearchEntry = { id: string; label: string; kind: "Pays" | "Organisation" | "Zone"; position: [number, number]; country?: CountryDatum; organization?: Organization; region?: RegionId };
-type ConflictSignal = { id: string; position: [number, number]; weight: number; start: number; end?: number; relationId: string; label: string };
 
 const INDICATOR_YEARS = [2024, 2023, 2022] as const;
 const VECTOR_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
@@ -223,7 +223,7 @@ export default function Home() {
   const [boundaries, setBoundaries] = useState<any>(null);
   const [activeView, setActiveView] = useState<ViewId>("world");
   const [focusView, setFocusView] = useState<Pick<ViewConfig, "longitude" | "latitude" | "zoom"> | null>(null);
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => new URLSearchParams(window.location.search).get("mode") === "globe" ? "globe" : "map");
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => { const mode = new URLSearchParams(window.location.search).get("mode"); return mode === "globe" || mode === "tactical" ? mode : "map"; });
   const [indicatorYear, setIndicatorYear] = useState<number>(2024);
   const [timelineYear, setTimelineYear] = useState<number>(2024);
   const [activeRegion, setActiveRegion] = useState<RegionId>("all");
@@ -326,10 +326,7 @@ export default function Home() {
     return [...countryEntries, ...organizationEntries, ...zoneEntries].slice(0, 7);
   }, [countries, searchQuery]);
 
-  const conflictSignals = useMemo<ConflictSignal[]>(() => activeRelations.filter((relation) => relation.type === "militaire" || relation.type === "geopolitique" || relation.type === "securitaire").flatMap((relation) => {
-    const weight = relation.type === "militaire" ? 1 : 0.72;
-    return [{ id: `${relation.id}-source`, position: relation.source.position, weight, start: relation.start, end: relation.end, relationId: relation.id, label: relation.title }, { id: `${relation.id}-target`, position: relation.target.position, weight, start: relation.start, end: relation.end, relationId: relation.id, label: relation.title }];
-  }), [activeRelations]);
+  const conflictSignals = useMemo<UcdpConflictCell[]>(() => UCDP_CONFLICT_CELLS.filter((cell) => analysisMode === "evolution" ? cell.year >= evolutionStart && cell.year <= evolutionEnd : cell.year === timelineYear), [analysisMode, evolutionEnd, evolutionStart, timelineYear]);
 
   const layers = useMemo(() => {
     const indicatorLayers = INDICATORS.filter((indicator) => visibleLayers[indicator.id]).map((indicator) => new ScatterplotLayer<CountryDatum>({
@@ -409,16 +406,29 @@ export default function Home() {
       getAlignmentBaseline: "center",
       pickable: false,
     }) : null;
-    const conflictHeatLayer = showConflictHeat ? new HeatmapLayer<ConflictSignal>({
+    const conflictHeatLayer = showConflictHeat ? new HeatmapLayer<UcdpConflictCell>({
       id: `conflict-signals-${viewKey}`,
       data: conflictSignals,
       getPosition: (signal) => signal.position,
-      getWeight: (signal) => signal.weight,
-      radiusPixels: 68,
-      intensity: 0.85,
+      getWeight: (signal) => Math.log1p(signal.fatalities),
+      radiusPixels: displayMode === "tactical" ? 86 : 68,
+      intensity: 1.02,
       threshold: 0.06,
       colorRange: [[21, 38, 53], [66, 104, 120], [224, 188, 106], [255, 107, 53], [239, 86, 78]],
       pickable: false,
+    }) : null;
+    const conflictCellLayer = showConflictHeat ? new ScatterplotLayer<UcdpConflictCell>({
+      id: `conflict-cells-${viewKey}`,
+      data: conflictSignals,
+      getPosition: (signal) => signal.position,
+      getRadius: (signal) => Math.max(3, Math.min(12, Math.log1p(signal.fatalities))),
+      radiusUnits: "pixels",
+      getFillColor: [255, 236, 180, 150],
+      getLineColor: [239, 86, 78, 235],
+      getLineWidth: 1,
+      lineWidthUnits: "pixels",
+      stroked: true,
+      pickable: true,
     }) : null;
     const organizationLayer = new ScatterplotLayer<Organization>({
       id: `world-organizations-${viewKey}`,
@@ -435,7 +445,7 @@ export default function Home() {
       autoHighlight: true,
       highlightColor: [255, 237, 186, 170],
     });
-    return [...(boundaryLayer ? [boundaryLayer] : []), ...(selectionLayer ? [selectionLayer] : []), ...(conflictHeatLayer ? [conflictHeatLayer] : []), ...indicatorLayers, relationLayer, ...(directionLayer ? [directionLayer] : []), organizationLayer];
+    return [...(boundaryLayer ? [boundaryLayer] : []), ...(selectionLayer ? [selectionLayer] : []), ...(conflictHeatLayer ? [conflictHeatLayer] : []), ...(conflictCellLayer ? [conflictCellLayer] : []), ...indicatorLayers, relationLayer, ...(directionLayer ? [directionLayer] : []), organizationLayer];
   }, [activeRelations, animationPhase, boundaries, conflictSignals, countries, displayMode, filteredCountries, indicatorYear, relatedActorIds, selectedActorId, selectedZone, showConflictHeat, viewKey, visibleLayers]);
 
   function resetView() {
@@ -579,6 +589,10 @@ export default function Home() {
   }
 
   function tooltipFor(object: unknown, layerId?: string) {
+    if (layerId?.startsWith("conflict-cells")) {
+      const cell = object as UcdpConflictCell;
+      return `${UCDP_GED_SOURCE}\n${cell.year} · ${cell.events.toLocaleString("fr-FR")} événements\n${cell.fatalities.toLocaleString("fr-FR")} décès estimés (best)\nAgrégation spatiale : 0,5°`;
+    }
     if (layerId?.startsWith("geopolitical-arcs")) {
       const relation = object as Relation;
       return `${relation.source.name} → ${relation.target.name}\n${relation.title} · ${relation.type} · ${relation.start}${relation.end ? `–${relation.end}` : "–aujourd’hui"}\n${relation.detail}\nSource : ${relation.provenance ?? "Système de classification transmis"}`;
@@ -593,7 +607,7 @@ export default function Home() {
   }
 
   return (
-    <div className={`atlas-shell atlas-world-shell ${displayMode === "globe" ? "is-globe-mode" : ""}`}>
+    <div className={`atlas-shell atlas-world-shell ${displayMode === "globe" ? "is-globe-mode" : ""} ${displayMode === "tactical" ? "is-tactical-mode" : ""}`}>
       <header className="atlas-header" aria-label="Navigation principale">
         <a className="atlas-brand" href="#observatoire" aria-label="Atlas Flux — observatoire mondial"><img className="atlas-mark" src="/manus-storage/atlas-flux-mark_3ba6f503.png" alt="" /><span>ATLAS <em>FLUX</em></span></a>
         <div className="atlas-header-meta"><span className="live-dot" /><span>MONDE / RELATIONS</span><span className="header-rule" /><span>CARTOGRAPHIE INTERACTIVE</span></div>
@@ -603,7 +617,7 @@ export default function Home() {
       <main id="observatoire" className="world-observatory">
         <aside className="world-view-rail" aria-label="Vues cartographiques">
           <div className="world-rail-heading"><Globe2 size={16} aria-hidden="true" /><span>VUES</span></div>
-          <div className="display-mode-switch" aria-label="Mode de projection"><button type="button" className={displayMode === "map" ? "is-active" : ""} onClick={() => toggleDisplayMode("map")}>2D</button><button type="button" className={displayMode === "globe" ? "is-active" : ""} onClick={() => toggleDisplayMode("globe")}>3D</button></div>
+          <div className="display-mode-switch" aria-label="Mode de projection"><button type="button" className={displayMode === "map" ? "is-active" : ""} onClick={() => toggleDisplayMode("map")}>2D</button><button type="button" className={displayMode === "globe" ? "is-active" : ""} onClick={() => toggleDisplayMode("globe")}>GLOBE</button><button type="button" className={displayMode === "tactical" ? "is-active" : ""} onClick={() => toggleDisplayMode("tactical")}>TAC</button></div>
           <div className="world-view-list">
             {VIEWS.map((view) => <button key={view.id} className={activeView === view.id && !focusView ? "is-active" : ""} type="button" onClick={() => selectView(view)} aria-pressed={activeView === view.id && !focusView}><span>{view.short}</span><i>{view.label}</i></button>)}
           </div>
@@ -614,7 +628,7 @@ export default function Home() {
           <DeckGL
             key={`${viewKey}-${displayMode}`}
             views={globeView}
-            initialViewState={{ longitude: selectedView.longitude, latitude: selectedView.latitude, zoom: selectedView.zoom }}
+            initialViewState={{ longitude: selectedView.longitude, latitude: selectedView.latitude, zoom: displayMode === "tactical" ? Math.max(selectedView.zoom, 2.2) : selectedView.zoom }}
             controller
             layers={layers}
             getCursor={({ isDragging, isHovering }) => isDragging ? "grabbing" : isHovering ? "pointer" : "grab"}
@@ -631,21 +645,21 @@ export default function Home() {
               if (country.iso3) { setSelectedCountry(country); setSelectedActorId(country.iso3); setSelectedRelation(null); }
             }}
           >
-            {displayMode === "map" && <Map initialViewState={{ longitude: selectedView.longitude, latitude: selectedView.latitude, zoom: selectedView.zoom, pitch: 0, bearing: 0 }} mapStyle={VECTOR_STYLE} attributionControl={false} reuseMaps style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}><NavigationControl position="bottom-right" showCompass={false} /></Map>}
+            {displayMode !== "globe" && <Map initialViewState={{ longitude: selectedView.longitude, latitude: selectedView.latitude, zoom: displayMode === "tactical" ? Math.max(selectedView.zoom, 2.2) : selectedView.zoom, pitch: displayMode === "tactical" ? 58 : 0, bearing: displayMode === "tactical" ? -14 : 0 } as any} mapStyle={VECTOR_STYLE} attributionControl={false} reuseMaps style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}><NavigationControl position="bottom-right" showCompass={displayMode === "tactical"} /></Map>}
           </DeckGL>
 
-          <div className="world-grid-labels" aria-hidden="true"><span>180° O</span><span>{displayMode === "globe" ? "GLOBE 3D" : "0°"}</span><span>180° E</span><small>ATLAS / RELATIONS MONDIALES</small></div>
+          <div className="world-grid-labels" aria-hidden="true"><span>180° O</span><span>{displayMode === "globe" ? "GLOBE 3D" : displayMode === "tactical" ? "TACTIQUE 3D" : "0°"}</span><span>180° E</span><small>ATLAS / RELATIONS MONDIALES</small></div>
           {hoveredRelation && (() => { const reference = relationReference(hoveredRelation.relation); return <aside className="arc-source-tooltip" style={{ left: Math.min(hoveredRelation.x + 16, 820), top: Math.max(70, hoveredRelation.y - 12) }}><p><i style={{ backgroundColor: `rgb(${relationColor(hoveredRelation.relation.type).join(" ")})` }} />{hoveredRelation.relation.type} · {hoveredRelation.relation.start}{hoveredRelation.relation.end ? `–${hoveredRelation.relation.end}` : "–aujourd’hui"}</p><strong>{hoveredRelation.relation.source.name} → {hoveredRelation.relation.target.name}</strong><span>{hoveredRelation.relation.title}</span><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} <ExternalLink size={12} /></a></aside>; })()}
 
-          <div className="world-intro intro-animate"><p className="eyebrow"><Radar size={14} aria-hidden="true" /> {displayMode === "globe" ? "GLOBE DES INTERDÉPENDANCES" : "OBSERVATOIRE GÉOPOLITIQUE"}</p><h1>Relier les<br /><i>forces</i> en présence.</h1><p>Explorez les liens géopolitiques du corpus, filtrez leur période et sélectionnez un acteur pour faire apparaître son réseau.</p></div>
+          <div className="world-intro intro-animate"><p className="eyebrow"><Radar size={14} aria-hidden="true" /> {displayMode === "globe" ? "GLOBE DES INTERDÉPENDANCES" : displayMode === "tactical" ? "VUE TACTIQUE LOCALE" : "OBSERVATOIRE GÉOPOLITIQUE"}</p><h1>Relier les<br /><i>forces</i> en présence.</h1><p>{displayMode === "tactical" ? "Approchez une zone, un pays ou une organisation pour examiner sa densité relationnelle et les événements de conflit sourcés." : "Explorez les liens géopolitiques du corpus, filtrez leur période et sélectionnez un acteur pour faire apparaître son réseau."}</p></div>
 
           <section className="world-search" aria-label="Rechercher un acteur"><Search size={16} aria-hidden="true" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher un pays ou une organisation" aria-label="Rechercher un pays ou une organisation" />{searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Effacer la recherche"><X size={15} /></button>}{searchResults.length > 0 && <div className="search-results">{searchResults.map((entry) => <button key={entry.id} type="button" onClick={() => selectSearchEntry(entry)}><span className={entry.kind === "Organisation" ? "search-kind is-organization" : "search-kind"}>{entry.kind === "Organisation" ? <Building2 size={13} /> : <MapPin size={13} />}</span><span><b>{entry.label}</b><small>{entry.kind}</small></span></button>)}</div>}</section>
 
-          <section className="analysis-mode-panel" aria-label="Vues spécialisées"><p><Activity size={14} /> ANALYSE GUIDÉE</p><div><button type="button" className={analysisMode === "network" ? "is-active" : ""} onClick={() => selectAnalysisMode("network")}>Réseau</button><button type="button" className={analysisMode === "conflict" ? "is-active" : ""} onClick={() => selectAnalysisMode("conflict")}>Zones chaudes</button><button type="button" className={analysisMode === "evolution" ? "is-active" : ""} onClick={() => selectAnalysisMode("evolution")}>Évolution</button><button type="button" className={analysisMode === "multilateral" ? "is-active" : ""} onClick={() => selectAnalysisMode("multilateral")}>Multilatéral</button></div>{analysisMode === "conflict" && <small>Signaux de conflit du corpus · source UCDP à intégrer avec un extrait versionné.</small>}{analysisMode === "evolution" && <div className="evolution-window"><label>DE <input type="number" min="1858" max={evolutionEnd} value={evolutionStart} onChange={(event) => setEvolutionStart(Number(event.target.value))} /></label><span>→</span><label>À <input type="number" min={evolutionStart} max="2025" value={evolutionEnd} onChange={(event) => setEvolutionEnd(Number(event.target.value))} /></label></div>}{selectedZone && <button type="button" className="zone-clear" onClick={() => { setSelectedZone(null); setActiveRegion("all"); }}>Zone : {ANALYSIS_ZONES.find((zone) => zone.region === selectedZone)?.label} <X size={12} /></button>}</section>
+          <section className="analysis-mode-panel" aria-label="Vues spécialisées"><p><Activity size={14} /> ANALYSE GUIDÉE</p><div><button type="button" className={analysisMode === "network" ? "is-active" : ""} onClick={() => selectAnalysisMode("network")}>Réseau</button><button type="button" className={analysisMode === "conflict" ? "is-active" : ""} onClick={() => selectAnalysisMode("conflict")}>Zones chaudes</button><button type="button" className={analysisMode === "evolution" ? "is-active" : ""} onClick={() => selectAnalysisMode("evolution")}>Évolution</button><button type="button" className={analysisMode === "multilateral" ? "is-active" : ""} onClick={() => selectAnalysisMode("multilateral")}>Multilatéral</button></div>{analysisMode === "conflict" && <small><a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noreferrer">UCDP GED v26.1</a> · {UCDP_GED_PERIOD} · agrégation de cellules de 0,5° selon les décès estimés.</small>}{analysisMode === "evolution" && <div className="evolution-window"><label>DE <input type="number" min="1858" max={evolutionEnd} value={evolutionStart} onChange={(event) => setEvolutionStart(Number(event.target.value))} /></label><span>→</span><label>À <input type="number" min={evolutionStart} max="2025" value={evolutionEnd} onChange={(event) => setEvolutionEnd(Number(event.target.value))} /></label></div>}{selectedZone && <button type="button" className="zone-clear" onClick={() => { setSelectedZone(null); setActiveRegion("all"); }}>Zone : {ANALYSIS_ZONES.find((zone) => zone.region === selectedZone)?.label} <X size={12} /></button>}</section>
 
           <section className="world-filter-panel intro-animate delay-1" aria-label="Filtres d’indicateurs"><div className="world-filter-title"><Filter size={15} aria-hidden="true" /><span>INDICATEURS</span></div><div className="filter-group"><p>PÉRIODE STATISTIQUE</p><div className="filter-pills">{INDICATOR_YEARS.map((year) => <button key={year} type="button" className={indicatorYear === year ? "is-selected" : ""} onClick={() => setIndicatorYear(year)}>{year}</button>)}</div></div><div className="filter-group"><p>RÉGION</p><div className="filter-pills region-pills">{REGION_FILTERS.map((region) => <button key={region.id} type="button" className={activeRegion === region.id ? "is-selected" : ""} onClick={() => { setActiveRegion(region.id); setSelectedCountry(null); }}>{region.label}</button>)}</div></div><p className="filter-status">{isLoading ? "Lecture des données…" : `${filteredCount} pays disponibles`}</p></section>
 
-          <section className="world-layer-panel intro-animate delay-2" aria-label="Calques et relations"><div className="layer-panel-heading"><Layers3 size={15} aria-hidden="true" /><span>CALQUES ACTIFS</span><b>{String(visibleIndicatorCount).padStart(2, "0")}</b></div>{INDICATORS.map((indicator) => <button key={indicator.id} data-layer={indicator.compact} className={`world-layer-button ${visibleLayers[indicator.id] ? "is-active" : ""}`} type="button" onClick={() => toggleLayer(indicator.id)} aria-pressed={visibleLayers[indicator.id]}><span className="world-layer-dot" style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} aria-hidden="true" /><span><b>{indicator.label}</b><small>{indicator.sourceLabel}</small></span>{visibleLayers[indicator.id] && <Check size={14} aria-hidden="true" />}</button>)}<button type="button" className={`heatmap-toggle ${showConflictHeat ? "is-active" : ""}`} onClick={() => setShowConflictHeat((value) => !value)}><span /> Signaux de conflit</button><div className="relation-filter-heading"><Activity size={14} aria-hidden="true" /><span>TYPOLOGIES / {activeRelations.length}</span></div><div className="relation-type-grid relation-type-grid-expanded">{RELATION_TYPES.map((type) => <button key={type.id} data-relation={type.short} type="button" onClick={() => selectRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span><em>{visibleRelationTypes[type.id] ? "actif" : ""}</em></button>)}</div></section>
+          <section className="world-layer-panel intro-animate delay-2" aria-label="Calques et relations"><div className="layer-panel-heading"><Layers3 size={15} aria-hidden="true" /><span>CALQUES ACTIFS</span><b>{String(visibleIndicatorCount).padStart(2, "0")}</b></div>{INDICATORS.map((indicator) => <button key={indicator.id} data-layer={indicator.compact} className={`world-layer-button ${visibleLayers[indicator.id] ? "is-active" : ""}`} type="button" onClick={() => toggleLayer(indicator.id)} aria-pressed={visibleLayers[indicator.id]}><span className="world-layer-dot" style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} aria-hidden="true" /><span><b>{indicator.label}</b><small>{indicator.sourceLabel}</small></span>{visibleLayers[indicator.id] && <Check size={14} aria-hidden="true" />}</button>)}<button type="button" className={`heatmap-toggle ${showConflictHeat ? "is-active" : ""}`} onClick={() => setShowConflictHeat((value) => !value)}><span /> Conflits UCDP GED <em>{UCDP_GED_PERIOD}</em></button><div className="relation-filter-heading"><Activity size={14} aria-hidden="true" /><span>TYPOLOGIES / {activeRelations.length}</span></div><div className="relation-type-grid relation-type-grid-expanded">{RELATION_TYPES.map((type) => <button key={type.id} data-relation={type.short} type="button" onClick={() => selectRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span><em>{visibleRelationTypes[type.id] ? "actif" : ""}</em></button>)}</div></section>
 
           <section className="relation-timeline" aria-label="Timeline des relations"><div><Clock3 size={15} aria-hidden="true" /><span>TIMELINE</span></div><button type="button" onClick={() => stepTimeline(-1)} aria-label="Année précédente"><ChevronLeft size={16} /></button><div className="timeline-slider-wrap"><input type="range" min="1858" max="2025" value={timelineYear} onChange={(event) => setTimelineYear(Number(event.target.value))} onPointerMove={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setTimelinePreviewYear(Math.round(1858 + ((event.clientX - rect.left) / rect.width) * (2025 - 1858))); }} onPointerLeave={() => setTimelinePreviewYear(null)} aria-label="Année des relations" />{timelinePreviewYear !== null && <div className="timeline-preview"><b>{timelinePreviewYear}</b><span>{RELATIONS.filter((relation) => relation.start <= timelinePreviewYear && (relation.end === undefined || relation.end >= timelinePreviewYear)).length} liens du corpus</span></div>}</div><button type="button" onClick={() => stepTimeline(1)} aria-label="Année suivante"><ChevronRight size={16} /></button><strong>{timelineYear}</strong><p>{activeRelations.length} liens actifs</p></section>
 
@@ -655,7 +669,7 @@ export default function Home() {
 
           <aside className={`bilateral-comparator ${isComparatorOpen ? "is-open" : ""}`} aria-label="Comparateur bilatéral"><button className="detail-close" type="button" onClick={() => setIsComparatorOpen(false)} aria-label="Fermer le comparateur"><X size={17} /></button><p className="eyebrow"><GitCompareArrows size={14} aria-hidden="true" /> COMPARATEUR BILATÉRAL</p><h3>Deux pays,<br /><i>une relation</i>.</h3><div className="comparator-selects"><label><span>PAYS A</span><select value={compareLeftId} onChange={(event) => setCompareLeftId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label><span className="compare-arrow">↔</span><label><span>PAYS B</span><select value={compareRightId} onChange={(event) => setCompareRightId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label></div><section className="comparison-history" aria-label="Évolution historique des relations"><div className="comparison-history-heading"><Activity size={14} /><span>ÉVOLUTION HISTORIQUE</span><b>{historyStart} — 2025</b></div>{bilateralHistory.length ? <div className="history-lines">{bilateralHistory.map((relation) => <div className="history-line" key={relation.id}><span>{relation.type}</span><div className="history-track"><i style={{ left: `${((relation.start - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%`, width: `${(((relation.end ?? 2025) - relation.start) / Math.max(1, 2025 - historyStart)) * 100}%`, backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><em style={{ left: `${((timelineYear - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%` }} /></div></div>)}</div> : <div className="comparison-empty">Aucune évolution relationnelle renseignée dans ce corpus pour cette paire.</div>}</section><div className="comparison-summary"><p>{compareLeft?.name ?? "Pays A"}<span>↔</span>{compareRight?.name ?? "Pays B"}</p>{bilateralRelations.length > 0 ? bilateralRelations.map((relation) => { const reference = relationReference(relation); return <article key={relation.id}><i style={{ backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><div><b>{relation.title}</b><small>{relation.type} · {relation.start}{relation.end ? `–${relation.end}` : "–aujourd’hui"}</small><span>{relation.detail}</span><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} <ExternalLink size={12} /></a></div></article>; }) : <div className="comparison-empty">Aucune relation active de ce corpus pour la période sélectionnée.</div>}</div><div className="comparison-exports"><button type="button" onClick={downloadComparisonCsv}><FileSpreadsheet size={14} /> CSV</button><button type="button" onClick={downloadComparisonPdf}><FileText size={14} /> Rapport PDF</button></div><button className="comparison-focus" type="button" onClick={() => { if (compareLeft && compareRight) { setSelectedActorId(null); setFocusView({ longitude: (compareLeft.position[0] + compareRight.position[0]) / 2, latitude: (compareLeft.position[1] + compareRight.position[1]) / 2, zoom: displayMode === "globe" ? 0.65 : 2.2 }); setViewKey((key) => key + 1); } }}><LocateFixed size={14} /> Cadrer les deux pays</button></aside>
 
-          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Vue monde</Button><Button className="instrument-button compare-trigger" variant="outline" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button snapshot-trigger" variant="outline" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Snapshot</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
+          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Vue monde</Button><Button className="instrument-button compare-trigger" variant="outline" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button snapshot-trigger" variant="outline" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Snapshot</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : displayMode === "tactical" ? "Tactique 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
         </section>
       </main>
 
