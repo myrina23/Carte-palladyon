@@ -70,6 +70,8 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Auditer l’archive Palladyon, identifier les composants compatibles et remplacer les équivalents Atlas Flux sans perdre les interactions existantes.
+- [x] Vérifier les remplacements Palladyon sur bureau et mobile, puis documenter les suggestions d’extension pertinentes.
 - [x] Harmoniser la scrollbar du panneau Filtres principaux avec le verre dépoli transparent.
 - [x] Retirer les deux libellés de dates redondants et toute séparation visuelle superflue dans la timeline.
 - [x] Retirer l’élément contextuel persistant qui crée des conflits d’affichage sur la carte.

@@ -1,3 +1,4 @@
+// Adaptation directe de la primitive Switch fournie dans l’archive Palladyon.
 import * as React from "react";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 

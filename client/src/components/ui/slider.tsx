@@ -1,3 +1,4 @@
+// Adaptation directe de la primitive Slider fournie dans l’archive Palladyon.
 import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 

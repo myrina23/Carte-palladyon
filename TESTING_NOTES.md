@@ -77,3 +77,13 @@
 | Mobile 375 × 812 | Timeline et panneau Filtres | La piste unique, l’icône Timeline et les deux poignées restent lisibles. Le panneau conserve sa densité sans éléments de période redondants. |
 | Popover Timeline | Sélection de période | Un clic sur Timeline ouvre directement le calendrier de plage et les molettes DE/À. |
 | Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **16 tests Vitest** validés après mise à jour du contrat UI. |
+
+## Intégration des primitives Palladyon
+
+| Composant intégré | Remplacement Atlas Flux | Résultat |
+| --- | --- | --- |
+| `Switch` | Interrupteurs synthétiques des typologies | Les filtres de liens utilisent désormais la primitive Palladyon/Radix, avec l’état et les couleurs sémantiques Atlas Flux conservés. |
+| `Slider` | Deux inputs de plage temporelle | La timeline utilise maintenant le Slider Palladyon/Radix à deux poignées, synchronisé avec les dates, le calendrier et les molettes. |
+| Compatibilité | Bureau 1440 × 900 et mobile 375 × 812 | Les toggles et les poignées restent lisibles ; les repères explicites garantissent la visibilité des deux bornes sur mobile. |
+| Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **16 tests Vitest** validés, dont les contrats d’adoption des primitives Palladyon. |
+| Extensions recommandées | Composants Palladyon à envisager | Le `Dock` pourrait remplacer la barre d’actions basse ; `MorphingPopover` conviendrait aux fiches de relations ; `ScrollArea` peut servir aux longues listes de sources si leur volume augmente. |
