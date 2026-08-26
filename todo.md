@@ -1,5 +1,13 @@
 # Mise à jour Atlas Flux
 
+## Légendes contextuelles, évolution A→B et extension Wikidata
+
+- [x] Définir une légende contextuelle détaillée pour chaque typologie et son code visuel.
+- [x] Ajouter l’accès progressif à la légende depuis les filtres et les détails de relation.
+- [x] Construire une comparaison temporelle A→B avec une lecture cartographique des changements.
+- [x] Étendre le sous-ensemble Wikidata avec de nouvelles relations résolues, typées et sourcées.
+- [x] Vérifier la traçabilité des sources, les états URL et les rendus bureau/mobile.
+
 ## Charte UX et palette sémantique permanente
 
 - [x] Documenter les règles d’affordance, de modèle mental et de divulgation progressive.

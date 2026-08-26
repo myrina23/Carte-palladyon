@@ -98,3 +98,12 @@ Le calque de chaleur reste donc explicitement un **signal du corpus**, tandis qu
 | UCDP GED v26.1 | Agrégation spatiale par cellule de 0,5° et sélection des douze cellules ayant le plus de décès estimés chaque année. | 72 cellules, de 2020 à 2025, avec année, nombre d’événements et colonne UCDP `best` agrégée. |
 
 Le filtre de gravité applique des seuils de **500**, **2 000** ou **10 000** décès estimés à l’extrait UCDP affiché. Ces valeurs servent à restreindre les cellules de visualisation ; elles ne constituent ni une qualification juridique, ni une mesure exhaustive de la violence mondiale.
+
+## Extension Wikidata — légendes et temporalité
+
+L’extension conserve les relations **P47** et **P463** effectivement présentes dans l’export SPARQL utilisateur et résolues par QID, libellé et coordonnées. La propriété P47 décrit un voisinage par terre ou par eau ; P463 décrit l’appartenance à une organisation. Les qualificateurs de début et de fin n’étant pas fournis dans l’extrait exploité, ces liens sont affichés comme **structurels non datés** : ils enrichissent la carte et le résumé, mais sont exclus des écarts chronologiques A→B.
+
+| Source | Usage dans Atlas Flux |
+| --- | --- |
+| [Wikidata P47](https://www.wikidata.org/wiki/Property:P47) | Frontières et voisinages géographiques, dont le caractère terrestre ou maritime est précisé dans la légende. |
+| [Wikidata P463](https://www.wikidata.org/wiki/Property:P463) | Appartenances organisationnelles visualisées comme liens juridiques structurels. |
