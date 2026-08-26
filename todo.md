@@ -1,5 +1,13 @@
 # Mise à jour Atlas Flux
 
+## Refonte géopolitique mondiale
+
+- [x] Sélectionner des indicateurs géopolitiques mondiaux et des sources publiques fiables.
+- [x] Remplacer le cadrage parisien par une vue mondiale et des limites de pays.
+- [x] Ajouter des boutons de vues régionales et globales.
+- [x] Ajouter des boutons de calques et des filtres par période, région et indicateur.
+- [x] Vérifier les interactions et l’affichage responsive de la carte mondiale.
+
 - [x] Identifier un jeu de données GeoJSON public, réutilisable et adapté à la visualisation urbaine.
 - [x] Vérifier l’intégration officielle de MapLibre avec deck.gl pour le fond vectoriel.
 - [x] Préparer une sélection de données temporelles cohérentes pour l’exploration par période.

@@ -20,3 +20,13 @@ Le site utilisera **`@deck.gl/react`** pour le composant de rendu et **`@deck.gl
 | [visgl/react-map-gl](https://github.com/visgl/react-map-gl) | Le dépôt officiel indique l’installation de `react-map-gl` et `maplibre-gl` pour l’adaptateur MapLibre. | Ajouter ces paquets et afficher un style vectoriel public sans clé en arrière-plan. |
 
 L’application présentera explicitement les données comme issues de **Paris Data**, avec un lien vers la fiche du jeu. Aucun indicateur de volume ne sera présenté comme une mesure de fréquentation : les métriques du panneau seront dérivées uniquement de propriétés disponibles, notamment la date de livraison et la catégorie.
+
+## Refonte géopolitique mondiale — sources et périmètre
+
+| Calque | Indicateur | Source publique | Traitement dans Atlas Flux |
+| --- | --- | --- | --- |
+| Puissance économique | PIB en dollars courants (`NY.GDP.MKTP.CD`) | [Banque mondiale](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD) | Taille des marqueurs proportionnelle sur une échelle logarithmique. |
+| Démographie | Population totale (`SP.POP.TOTL`) | [Banque mondiale](https://data.worldbank.org/indicator/SP.POP.TOTL) | Taille et intensité des marqueurs comparables par pays. |
+| Effort de défense | Dépenses militaires, part du PIB (`MS.MIL.XPND.GD.ZS`) | [Banque mondiale / SIPRI](https://data.worldbank.org/indicator/MS.MIL.XPND.GD.ZS) | Couche spécifique, présentée comme un pourcentage du PIB et non comme un niveau de dépenses. |
+
+La [documentation de l’API des indicateurs](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation) confirme l’accès programmatique sans clé et l’utilisation de l’API V2. L’application chargera les données nationales et leurs coordonnées de capitales depuis cette API. Les vues initiales seront **Monde**, **Europe**, **Amériques**, **Indo-Pacifique** et **Afrique–Moyen-Orient** ; les filtres seront **année** et **région**. Ces données sont des indicateurs descriptifs et ne constituent pas une évaluation du risque ou une prévision géopolitique.
