@@ -39,6 +39,16 @@
 - [x] Vérifier la suppression propriétaire, la lecture partagée et la création d’une collection par tests de procédure couvrant leur cycle complet.
 - [x] Vérifier les exports PDF/CSV de fiche dans le navigateur et documenter la vérification des collections authentifiées.
 
+## Ajustements visuels annotés
+
+- [x] Adapter aussi le fond cartographique, les calques et les contrôles au mode clair.
+- [x] Déplacer les commandes de vue 2D/Globe/Tac dans l’encadré Filtres principaux, sans le libellé « Vue ».
+- [x] Déplacer le bouton de visibilité des filtres dans l’encadré Filtres principaux.
+- [x] Intégrer la période à molettes dans le panneau de filtres et supprimer sa duplication latérale.
+- [x] Placer les actions secondaires sous la carte, conserver Comparer à gauche et placer partage/impression sous forme d’icônes à droite.
+- [x] Recréer le logo sous forme vectorielle transparente, sans fond matriciel.
+- [x] Vérifier les nouveaux rendus sombre et clair sur bureau et mobile.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.

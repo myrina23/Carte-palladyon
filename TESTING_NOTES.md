@@ -15,3 +15,15 @@
 | Fiche relation → CSV | Navigateur Chromium, même fiche | Le téléchargement `atlas-flux-relation-france-—-bresil.csv` est confirmé dans l’historique des téléchargements. |
 | Création, lecture partagée et suppression de collection | Vitest, procédures tRPC et persistance simulée | Le cycle création → ajout d’un relevé → lecture par clé de partage → suppression propriétaire est couvert et validé. |
 | Création persistante en interface | Navigateur non connecté | Le sélecteur de relevé et le point d’entrée sont visibles. La dernière écriture en base est volontairement non testée dans le navigateur, car elle demande une session Manus ; aucune collection fictive n’a été créée dans la base. |
+
+## Vérification des annotations visuelles
+
+| Ajustement | Vérification | Résultat |
+| --- | --- | --- |
+| Contrôles cartographiques | Captures bureau et mobile | Les boutons 2D, Globe, Tac et l’œil sont regroupés dans **Filtres principaux**, sans libellé « Vue ». |
+| Filtres fusionnés | Captures bureau et mobile | Les organisations et les molettes de période se trouvent dans le même panneau ; les panneaux flottants doublons ont été retirés. |
+| Barre d’actions | Capture bureau | Comparer est placé à gauche sous la carte ; PDF, rapport et partage sont réduits à des boutons icônes à droite. |
+| Thème clair | Session navigateur | Le fond MapLibre bascule vers Positron, et les panneaux, la recherche, les champs et les contrôles utilisent un contraste clair cohérent. |
+| Logo | Inspection du rendu | La marque est un SVG transparent composé de deux formes angulaires, sans fond matriciel. |
+
+- La compilation TypeScript et les **13 tests Vitest** passent après les ajustements visuels.
