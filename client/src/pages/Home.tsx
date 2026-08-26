@@ -1,7 +1,8 @@
 /* Atlas Flux Monde — observatoire géopolitique : cartographie éditoriale sombre, relations temporelles et lecture multi-échelle. */
 import DeckGL from "@deck.gl/react";
 import { _GlobeView as GlobeView } from "@deck.gl/core";
-import { ArcLayer, GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { ArcLayer, GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button";
 import Map, { NavigationControl } from "react-map-gl/maplibre";
@@ -39,7 +40,8 @@ type IndicatorId = "gdp" | "population" | "defense";
 type RegionId = "all" | "europe" | "americas" | "africa" | "asia" | "mena";
 type ViewId = "world" | "europe" | "americas" | "indoPacific" | "africaMena";
 type DisplayMode = "map" | "globe";
-type RelationType = "geopolitique" | "militaire" | "economique" | "historique";
+type AnalysisMode = "network" | "conflict" | "evolution" | "multilateral";
+type RelationType = "geopolitique" | "militaire" | "economique" | "commercial" | "technologique" | "scientifique" | "culturel" | "historique" | "migratoire" | "ressources" | "securitaire" | "ideologique" | "financier" | "numerique" | "juridique";
 
 type CountryApiRecord = {
   id: string;
@@ -86,7 +88,8 @@ type Relation = {
 };
 
 type ViewConfig = { id: ViewId; label: string; short: string; longitude: number; latitude: number; zoom: number };
-type SearchEntry = { id: string; label: string; kind: "Pays" | "Organisation"; position: [number, number]; country?: CountryDatum; organization?: Organization };
+type SearchEntry = { id: string; label: string; kind: "Pays" | "Organisation" | "Zone"; position: [number, number]; country?: CountryDatum; organization?: Organization; region?: RegionId };
+type ConflictSignal = { id: string; position: [number, number]; weight: number; start: number; end?: number; relationId: string; label: string };
 
 const INDICATOR_YEARS = [2024, 2023, 2022] as const;
 const VECTOR_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
@@ -103,7 +106,18 @@ const RELATION_TYPES: Array<{ id: RelationType; label: string; short: string; co
   { id: "geopolitique", label: "Géopolitique", short: "GÉO", color: [255, 107, 53] },
   { id: "militaire", label: "Militaire", short: "MIL", color: [239, 86, 78] },
   { id: "economique", label: "Économique", short: "ÉCO", color: [242, 194, 78] },
+  { id: "commercial", label: "Commercial", short: "COM", color: [80, 175, 202] },
+  { id: "technologique", label: "Technologique", short: "TEC", color: [96, 139, 235] },
+  { id: "scientifique", label: "Scientifique", short: "SCI", color: [122, 191, 165] },
+  { id: "culturel", label: "Culturel", short: "CUL", color: [205, 141, 186] },
   { id: "historique", label: "Historique", short: "HIS", color: [165, 117, 236] },
+  { id: "migratoire", label: "Migratoire", short: "MIG", color: [99, 190, 197] },
+  { id: "ressources", label: "Ressources", short: "RES", color: [208, 163, 90] },
+  { id: "securitaire", label: "Sécuritaire", short: "SÉC", color: [234, 91, 91] },
+  { id: "ideologique", label: "Idéologique", short: "IDÉ", color: [191, 117, 214] },
+  { id: "financier", label: "Financier", short: "FIN", color: [151, 203, 105] },
+  { id: "numerique", label: "Numérique", short: "NUM", color: [88, 144, 215] },
+  { id: "juridique", label: "Juridique", short: "JUR", color: [163, 177, 187] },
 ];
 
 const VIEWS: ViewConfig[] = [
@@ -116,6 +130,14 @@ const VIEWS: ViewConfig[] = [
 
 const REGION_FILTERS: Array<{ id: RegionId; label: string }> = [
   { id: "all", label: "Tous" }, { id: "europe", label: "Europe" }, { id: "americas", label: "Amériques" }, { id: "africa", label: "Afrique" }, { id: "asia", label: "Asie-Pac." }, { id: "mena", label: "M.-Orient" },
+];
+
+const ANALYSIS_ZONES: Array<{ id: string; label: string; region: RegionId; position: [number, number] }> = [
+  { id: "ZONE_EUROPE", label: "Zone européenne", region: "europe", position: [14, 51] },
+  { id: "ZONE_AMERICAS", label: "Zone Amériques", region: "americas", position: [-82, 14] },
+  { id: "ZONE_AFRICA", label: "Zone Afrique", region: "africa", position: [20, 5] },
+  { id: "ZONE_ASIA", label: "Zone Asie-Pacifique", region: "asia", position: [115, 22] },
+  { id: "ZONE_MENA", label: "Zone Moyen-Orient", region: "mena", position: [40, 29] },
 ];
 
 const ORGANIZATIONS: Organization[] = [
@@ -192,6 +214,10 @@ function csvCell(value: string | number) {
   return `"${String(value).replaceAll('"', '""')}"`;
 }
 
+function normalizeSearch(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+}
+
 export default function Home() {
   const [countries, setCountries] = useState<CountryDatum[]>([]);
   const [boundaries, setBoundaries] = useState<any>(null);
@@ -201,10 +227,16 @@ export default function Home() {
   const [indicatorYear, setIndicatorYear] = useState<number>(2024);
   const [timelineYear, setTimelineYear] = useState<number>(2024);
   const [activeRegion, setActiveRegion] = useState<RegionId>("all");
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(() => { const mode = new URLSearchParams(window.location.search).get("analysis"); return mode === "conflict" || mode === "evolution" || mode === "multilateral" ? mode : "network"; });
+  const [selectedZone, setSelectedZone] = useState<RegionId | null>(null);
+  const [showConflictHeat, setShowConflictHeat] = useState(() => new URLSearchParams(window.location.search).get("analysis") === "conflict");
+  const [timelinePreviewYear, setTimelinePreviewYear] = useState<number | null>(null);
+  const [evolutionStart, setEvolutionStart] = useState(1945);
+  const [evolutionEnd, setEvolutionEnd] = useState(2025);
   const [visibleLayers, setVisibleLayers] = useState<Record<IndicatorId, boolean>>({ gdp: true, population: false, defense: false });
-  const [visibleRelationTypes, setVisibleRelationTypes] = useState<Record<RelationType, boolean>>({ geopolitique: true, militaire: true, economique: true, historique: true });
+  const [visibleRelationTypes, setVisibleRelationTypes] = useState<Record<RelationType, boolean>>(() => Object.fromEntries(RELATION_TYPES.map((type) => [type.id, true])) as Record<RelationType, boolean>);
   const [selectedCountry, setSelectedCountry] = useState<CountryDatum | null>(null);
-  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [selectedActorId, setSelectedActorId] = useState<string | null>(() => new URLSearchParams(window.location.search).get("actor"));
   const [selectedRelation, setSelectedRelation] = useState<Relation | null>(null);
   const [compareLeftId, setCompareLeftId] = useState("TUR");
   const [compareRightId, setCompareRightId] = useState("GRC");
@@ -273,8 +305,12 @@ export default function Home() {
   const visibleIndicatorCount = INDICATORS.filter((indicator) => visibleLayers[indicator.id]).length;
   const filteredCount = filteredCountries.filter((country) => INDICATORS.some((indicator) => visibleLayers[indicator.id] && country.indicators[indicator.id][indicatorYear] !== undefined)).length;
 
-  const activeRelations = useMemo(() => RELATIONS.filter((relation) => relation.start <= timelineYear && (relation.end === undefined || relation.end >= timelineYear) && visibleRelationTypes[relation.type]).filter((relation) => !selectedActorId || relation.source.id === selectedActorId || relation.target.id === selectedActorId), [timelineYear, visibleRelationTypes, selectedActorId]);
+  const activeRelations = useMemo(() => RELATIONS.filter((relation) => {
+    const isInTemporalWindow = analysisMode === "evolution" ? relation.start <= evolutionEnd && (relation.end === undefined || relation.end >= evolutionStart) : relation.start <= timelineYear && (relation.end === undefined || relation.end >= timelineYear);
+    return isInTemporalWindow && visibleRelationTypes[relation.type];
+  }).filter((relation) => !selectedActorId || relation.source.id === selectedActorId || relation.target.id === selectedActorId).filter((relation) => !selectedZone || countries.find((country) => country.iso3 === relation.source.id)?.region === selectedZone || countries.find((country) => country.iso3 === relation.target.id)?.region === selectedZone).filter((relation) => analysisMode !== "multilateral" || ORGANIZATIONS.some((organization) => organization.id === relation.source.id || organization.id === relation.target.id)), [analysisMode, evolutionEnd, evolutionStart, timelineYear, visibleRelationTypes, selectedActorId, selectedZone, countries]);
   const selectedOrganization = ORGANIZATIONS.find((organization) => organization.id === selectedActorId) ?? null;
+  const relatedActorIds = useMemo(() => new Set(activeRelations.flatMap((relation) => [relation.source.id, relation.target.id])), [activeRelations]);
   const compareLeft = countries.find((country) => country.iso3 === compareLeftId) ?? null;
   const compareRight = countries.find((country) => country.iso3 === compareRightId) ?? null;
   const bilateralRelations = RELATIONS.filter((relation) => relation.start <= timelineYear && (relation.end === undefined || relation.end >= timelineYear) && ((relation.source.id === compareLeftId && relation.target.id === compareRightId) || (relation.source.id === compareRightId && relation.target.id === compareLeftId)));
@@ -282,12 +318,18 @@ export default function Home() {
   const historyStart = bilateralHistory.length ? Math.min(...bilateralHistory.map((relation) => relation.start)) : 1858;
 
   const searchResults = useMemo<SearchEntry[]>(() => {
-    const query = searchQuery.trim().toLocaleLowerCase("fr");
+    const query = normalizeSearch(searchQuery.trim());
     if (!query) return [];
-    const countryEntries = countries.filter((country) => country.name.toLocaleLowerCase("fr").includes(query) || country.iso3.toLocaleLowerCase("fr").includes(query)).map((country) => ({ id: country.iso3, label: country.name, kind: "Pays" as const, position: country.position, country }));
-    const organizationEntries = ORGANIZATIONS.filter((organization) => organization.name.toLocaleLowerCase("fr").includes(query) || organization.acronym.toLocaleLowerCase("fr").includes(query)).map((organization) => ({ id: organization.id, label: organization.name, kind: "Organisation" as const, position: organization.position, organization }));
-    return [...countryEntries, ...organizationEntries].slice(0, 7);
+    const countryEntries = countries.filter((country) => normalizeSearch(country.name).includes(query) || normalizeSearch(country.iso3).includes(query)).map((country) => ({ id: country.iso3, label: country.name, kind: "Pays" as const, position: country.position, country }));
+    const organizationEntries = ORGANIZATIONS.filter((organization) => normalizeSearch(organization.name).includes(query) || normalizeSearch(organization.acronym).includes(query)).map((organization) => ({ id: organization.id, label: organization.name, kind: "Organisation" as const, position: organization.position, organization }));
+    const zoneEntries = ANALYSIS_ZONES.filter((zone) => normalizeSearch(zone.label).includes(query)).map((zone) => ({ id: zone.id, label: zone.label, kind: "Zone" as const, position: zone.position, region: zone.region }));
+    return [...countryEntries, ...organizationEntries, ...zoneEntries].slice(0, 7);
   }, [countries, searchQuery]);
+
+  const conflictSignals = useMemo<ConflictSignal[]>(() => activeRelations.filter((relation) => relation.type === "militaire" || relation.type === "geopolitique" || relation.type === "securitaire").flatMap((relation) => {
+    const weight = relation.type === "militaire" ? 1 : 0.72;
+    return [{ id: `${relation.id}-source`, position: relation.source.position, weight, start: relation.start, end: relation.end, relationId: relation.id, label: relation.title }, { id: `${relation.id}-target`, position: relation.target.position, weight, start: relation.start, end: relation.end, relationId: relation.id, label: relation.title }];
+  }), [activeRelations]);
 
   const layers = useMemo(() => {
     const indicatorLayers = INDICATORS.filter((indicator) => visibleLayers[indicator.id]).map((indicator) => new ScatterplotLayer<CountryDatum>({
@@ -296,9 +338,9 @@ export default function Home() {
       getPosition: (country) => country.position,
       getRadius: (country) => pointSize(indicator.id, country.indicators[indicator.id][indicatorYear] ?? 0),
       radiusUnits: "pixels",
-      getFillColor: indicator.color,
-      getLineColor: (country) => country.iso3 === selectedActorId ? [255, 245, 215, 255] : [248, 243, 232, 190],
-      getLineWidth: (country) => country.iso3 === selectedActorId ? 2.5 : 1,
+      getFillColor: (country) => country.iso3 === selectedActorId ? [8, 41, 74, 255] : selectedActorId && relatedActorIds.has(country.iso3) ? [102, 164, 205, 230] : indicator.color,
+      getLineColor: (country) => country.iso3 === selectedActorId ? [216, 238, 255, 255] : selectedActorId && relatedActorIds.has(country.iso3) ? [185, 221, 242, 225] : [248, 243, 232, 190],
+      getLineWidth: (country) => country.iso3 === selectedActorId ? 3.2 : selectedActorId && relatedActorIds.has(country.iso3) ? 2 : 1,
       lineWidthUnits: "pixels",
       stroked: true,
       pickable: true,
@@ -316,6 +358,30 @@ export default function Home() {
       getLineWidth: 0.55,
       lineWidthUnits: "pixels",
     }) : null;
+    const relatedCountryIds = new Set(selectedActorId ? filteredCountries.filter((country) => relatedActorIds.has(country.iso3)).map((country) => country.iso3) : []);
+    const zoneCountryIds = new Set(countries.filter((country) => selectedZone && country.region === selectedZone).map((country) => country.iso3));
+    const selectionLayer = boundaries ? new GeoJsonLayer({
+      id: `actor-selection-${viewKey}`,
+      data: boundaries,
+      filled: true,
+      stroked: true,
+      pickable: false,
+      getFillColor: (feature: any) => {
+        const iso3 = String(feature.properties?.ISO_A3 ?? feature.properties?.ADM0_A3 ?? "");
+        if (iso3 === selectedActorId) return [8, 41, 74, 205];
+        if (zoneCountryIds.has(iso3)) return [8, 41, 74, 124];
+        if (relatedCountryIds.has(iso3)) return [102, 164, 205, 126];
+        return [0, 0, 0, 0];
+      },
+      getLineColor: (feature: any) => {
+        const iso3 = String(feature.properties?.ISO_A3 ?? feature.properties?.ADM0_A3 ?? "");
+        if (iso3 === selectedActorId) return [168, 213, 241, 255];
+        if (zoneCountryIds.has(iso3) || relatedCountryIds.has(iso3)) return [131, 188, 222, 210];
+        return [0, 0, 0, 0];
+      },
+      getLineWidth: 1.6,
+      lineWidthUnits: "pixels",
+    }) : null;
     const pulse = Math.round(130 + ((Math.sin(animationPhase / 3) + 1) / 2) * 110);
     const relationLayer = new ArcLayer<Relation>({
       id: `geopolitical-arcs-${viewKey}`,
@@ -331,6 +397,29 @@ export default function Home() {
       autoHighlight: true,
       highlightColor: [255, 245, 215, 255],
     });
+    const directionLayer = selectedActorId ? new TextLayer<Relation>({
+      id: `relation-directions-${viewKey}`,
+      data: activeRelations,
+      getPosition: (relation) => relation.target.position,
+      getText: () => ">",
+      getSize: 18,
+      sizeUnits: "pixels",
+      getColor: (relation) => [...relationColor(relation.type), 245] as [number, number, number, number],
+      getTextAnchor: "middle",
+      getAlignmentBaseline: "center",
+      pickable: false,
+    }) : null;
+    const conflictHeatLayer = showConflictHeat ? new HeatmapLayer<ConflictSignal>({
+      id: `conflict-signals-${viewKey}`,
+      data: conflictSignals,
+      getPosition: (signal) => signal.position,
+      getWeight: (signal) => signal.weight,
+      radiusPixels: 68,
+      intensity: 0.85,
+      threshold: 0.06,
+      colorRange: [[21, 38, 53], [66, 104, 120], [224, 188, 106], [255, 107, 53], [239, 86, 78]],
+      pickable: false,
+    }) : null;
     const organizationLayer = new ScatterplotLayer<Organization>({
       id: `world-organizations-${viewKey}`,
       data: ORGANIZATIONS,
@@ -346,8 +435,8 @@ export default function Home() {
       autoHighlight: true,
       highlightColor: [255, 237, 186, 170],
     });
-    return [...(boundaryLayer ? [boundaryLayer] : []), ...indicatorLayers, relationLayer, organizationLayer];
-  }, [activeRelations, animationPhase, boundaries, displayMode, filteredCountries, indicatorYear, selectedActorId, viewKey, visibleLayers]);
+    return [...(boundaryLayer ? [boundaryLayer] : []), ...(selectionLayer ? [selectionLayer] : []), ...(conflictHeatLayer ? [conflictHeatLayer] : []), ...indicatorLayers, relationLayer, ...(directionLayer ? [directionLayer] : []), organizationLayer];
+  }, [activeRelations, animationPhase, boundaries, conflictSignals, countries, displayMode, filteredCountries, indicatorYear, relatedActorIds, selectedActorId, selectedZone, showConflictHeat, viewKey, visibleLayers]);
 
   function resetView() {
     setActiveView("world");
@@ -365,6 +454,16 @@ export default function Home() {
   }
 
   function selectSearchEntry(entry: SearchEntry) {
+    if (entry.kind === "Zone" && entry.region) {
+      setSelectedZone(entry.region);
+      setActiveRegion(entry.region);
+      setSelectedActorId(null);
+      setSelectedCountry(null);
+      setFocusView({ longitude: entry.position[0], latitude: entry.position[1], zoom: 2.25 });
+      setSearchQuery("");
+      setViewKey((key) => key + 1);
+      return;
+    }
     setSelectedActorId(entry.id);
     setSelectedCountry(entry.country ?? null);
     setSelectedRelation(null);
@@ -377,6 +476,22 @@ export default function Home() {
   function toggleRelationType(id: RelationType) { setVisibleRelationTypes((current) => ({ ...current, [id]: !current[id] })); }
   function toggleDisplayMode(mode: DisplayMode) { setDisplayMode(mode); setFocusView(null); setViewKey((key) => key + 1); }
   function stepTimeline(amount: number) { setTimelineYear((year) => Math.max(1858, Math.min(2025, year + amount))); }
+
+  function selectRelationType(id: RelationType) {
+    setVisibleRelationTypes(() => Object.fromEntries(RELATION_TYPES.map((type) => [type.id, type.id === id])) as Record<RelationType, boolean>);
+    setAnalysisMode(id === "militaire" || id === "securitaire" ? "conflict" : "network");
+    setShowConflictHeat(id === "militaire" || id === "securitaire");
+    if (id === "militaire" || id === "securitaire") setVisibleLayers({ gdp: false, population: false, defense: true });
+    if (id === "economique" || id === "commercial" || id === "financier" || id === "ressources") setVisibleLayers({ gdp: true, population: false, defense: false });
+  }
+
+  function selectAnalysisMode(mode: AnalysisMode) {
+    setAnalysisMode(mode);
+    if (mode !== "conflict") setShowConflictHeat(false);
+    if (mode === "conflict") { setShowConflictHeat(true); setVisibleLayers({ gdp: false, population: false, defense: true }); }
+    if (mode === "multilateral") { setSelectedActorId(null); setSelectedZone(null); }
+    if (mode === "evolution") setTimelinePreviewYear(timelineYear);
+  }
 
   function downloadComparisonCsv() {
     const rows = [["Pays A", "Pays B", "Type", "Relation", "Début", "Fin", "Détail", "Source", "Lien"], ...bilateralHistory.map((relation) => {
@@ -427,6 +542,40 @@ export default function Home() {
       y += 83 + lines.length * 12;
     });
     report.save(`atlas-flux-${compareLeft?.iso3 ?? "pays-a"}-${compareRight?.iso3 ?? "pays-b"}.pdf`);
+  }
+
+  function downloadScenarioSnapshot() {
+    const report = new jsPDF({ unit: "pt", format: "a4" });
+    const selectedActor = selectedCountry?.name ?? selectedOrganization?.name ?? (selectedZone ? ANALYSIS_ZONES.find((zone) => zone.region === selectedZone)?.label : "Monde") ?? "Monde";
+    const activeTypes = RELATION_TYPES.filter((type) => visibleRelationTypes[type.id]).map((type) => type.label).join(", ") || "Aucun";
+    report.setFillColor(16, 26, 36);
+    report.rect(0, 0, 595, 118, "F");
+    report.setTextColor(255, 107, 53);
+    report.setFontSize(10);
+    report.text("ATLAS FLUX / SNAPSHOT D’ANALYSE", 42, 42);
+    report.setTextColor(246, 240, 229);
+    report.setFontSize(22);
+    report.text(selectedActor, 42, 78);
+    report.setTextColor(31, 47, 57);
+    report.setFontSize(11);
+    report.text(`Instant : ${timelineYear} · Vue : ${displayMode === "globe" ? "Globe 3D" : "Carte 2D"} · Mode : ${analysisMode}`, 42, 150);
+    report.text(`Typologies actives : ${activeTypes}`, 42, 169);
+    let y = 204;
+    activeRelations.forEach((relation) => {
+      if (y > 720) { report.addPage(); y = 50; }
+      const reference = relationReference(relation);
+      report.setTextColor(89, 151, 146);
+      report.setFontSize(10);
+      report.text(`${relation.source.name} → ${relation.target.name} · ${relation.type}`, 42, y);
+      report.setTextColor(31, 47, 57);
+      report.setFontSize(12);
+      report.text(relation.title, 42, y + 18);
+      report.setFontSize(8);
+      report.text(`Source : ${reference.label}`, 42, y + 33);
+      y += 57;
+    });
+    if (!activeRelations.length) report.text("Aucune relation active dans ce filtre temporel.", 42, y);
+    report.save(`atlas-flux-snapshot-${timelineYear}.pdf`);
   }
 
   function tooltipFor(object: unknown, layerId?: string) {
@@ -492,11 +641,13 @@ export default function Home() {
 
           <section className="world-search" aria-label="Rechercher un acteur"><Search size={16} aria-hidden="true" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher un pays ou une organisation" aria-label="Rechercher un pays ou une organisation" />{searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Effacer la recherche"><X size={15} /></button>}{searchResults.length > 0 && <div className="search-results">{searchResults.map((entry) => <button key={entry.id} type="button" onClick={() => selectSearchEntry(entry)}><span className={entry.kind === "Organisation" ? "search-kind is-organization" : "search-kind"}>{entry.kind === "Organisation" ? <Building2 size={13} /> : <MapPin size={13} />}</span><span><b>{entry.label}</b><small>{entry.kind}</small></span></button>)}</div>}</section>
 
+          <section className="analysis-mode-panel" aria-label="Vues spécialisées"><p><Activity size={14} /> ANALYSE GUIDÉE</p><div><button type="button" className={analysisMode === "network" ? "is-active" : ""} onClick={() => selectAnalysisMode("network")}>Réseau</button><button type="button" className={analysisMode === "conflict" ? "is-active" : ""} onClick={() => selectAnalysisMode("conflict")}>Zones chaudes</button><button type="button" className={analysisMode === "evolution" ? "is-active" : ""} onClick={() => selectAnalysisMode("evolution")}>Évolution</button><button type="button" className={analysisMode === "multilateral" ? "is-active" : ""} onClick={() => selectAnalysisMode("multilateral")}>Multilatéral</button></div>{analysisMode === "conflict" && <small>Signaux de conflit du corpus · source UCDP à intégrer avec un extrait versionné.</small>}{analysisMode === "evolution" && <div className="evolution-window"><label>DE <input type="number" min="1858" max={evolutionEnd} value={evolutionStart} onChange={(event) => setEvolutionStart(Number(event.target.value))} /></label><span>→</span><label>À <input type="number" min={evolutionStart} max="2025" value={evolutionEnd} onChange={(event) => setEvolutionEnd(Number(event.target.value))} /></label></div>}{selectedZone && <button type="button" className="zone-clear" onClick={() => { setSelectedZone(null); setActiveRegion("all"); }}>Zone : {ANALYSIS_ZONES.find((zone) => zone.region === selectedZone)?.label} <X size={12} /></button>}</section>
+
           <section className="world-filter-panel intro-animate delay-1" aria-label="Filtres d’indicateurs"><div className="world-filter-title"><Filter size={15} aria-hidden="true" /><span>INDICATEURS</span></div><div className="filter-group"><p>PÉRIODE STATISTIQUE</p><div className="filter-pills">{INDICATOR_YEARS.map((year) => <button key={year} type="button" className={indicatorYear === year ? "is-selected" : ""} onClick={() => setIndicatorYear(year)}>{year}</button>)}</div></div><div className="filter-group"><p>RÉGION</p><div className="filter-pills region-pills">{REGION_FILTERS.map((region) => <button key={region.id} type="button" className={activeRegion === region.id ? "is-selected" : ""} onClick={() => { setActiveRegion(region.id); setSelectedCountry(null); }}>{region.label}</button>)}</div></div><p className="filter-status">{isLoading ? "Lecture des données…" : `${filteredCount} pays disponibles`}</p></section>
 
-          <section className="world-layer-panel intro-animate delay-2" aria-label="Calques et relations"><div className="layer-panel-heading"><Layers3 size={15} aria-hidden="true" /><span>CALQUES ACTIFS</span><b>{String(visibleIndicatorCount).padStart(2, "0")}</b></div>{INDICATORS.map((indicator) => <button key={indicator.id} data-layer={indicator.compact} className={`world-layer-button ${visibleLayers[indicator.id] ? "is-active" : ""}`} type="button" onClick={() => toggleLayer(indicator.id)} aria-pressed={visibleLayers[indicator.id]}><span className="world-layer-dot" style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} aria-hidden="true" /><span><b>{indicator.label}</b><small>{indicator.sourceLabel}</small></span>{visibleLayers[indicator.id] && <Check size={14} aria-hidden="true" />}</button>)}<div className="relation-filter-heading"><Activity size={14} aria-hidden="true" /><span>LÉGENDE INTERACTIVE / {activeRelations.length}</span></div><div className="relation-type-grid">{RELATION_TYPES.map((type) => <button key={type.id} data-relation={type.short} type="button" onClick={() => toggleRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span><em>{visibleRelationTypes[type.id] ? "visible" : "masqué"}</em></button>)}</div></section>
+          <section className="world-layer-panel intro-animate delay-2" aria-label="Calques et relations"><div className="layer-panel-heading"><Layers3 size={15} aria-hidden="true" /><span>CALQUES ACTIFS</span><b>{String(visibleIndicatorCount).padStart(2, "0")}</b></div>{INDICATORS.map((indicator) => <button key={indicator.id} data-layer={indicator.compact} className={`world-layer-button ${visibleLayers[indicator.id] ? "is-active" : ""}`} type="button" onClick={() => toggleLayer(indicator.id)} aria-pressed={visibleLayers[indicator.id]}><span className="world-layer-dot" style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} aria-hidden="true" /><span><b>{indicator.label}</b><small>{indicator.sourceLabel}</small></span>{visibleLayers[indicator.id] && <Check size={14} aria-hidden="true" />}</button>)}<button type="button" className={`heatmap-toggle ${showConflictHeat ? "is-active" : ""}`} onClick={() => setShowConflictHeat((value) => !value)}><span /> Signaux de conflit</button><div className="relation-filter-heading"><Activity size={14} aria-hidden="true" /><span>TYPOLOGIES / {activeRelations.length}</span></div><div className="relation-type-grid relation-type-grid-expanded">{RELATION_TYPES.map((type) => <button key={type.id} data-relation={type.short} type="button" onClick={() => selectRelationType(type.id)} className={visibleRelationTypes[type.id] ? "is-active" : ""} aria-pressed={visibleRelationTypes[type.id]}><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /><span>{type.label}</span><em>{visibleRelationTypes[type.id] ? "actif" : ""}</em></button>)}</div></section>
 
-          <section className="relation-timeline" aria-label="Timeline des relations"><div><Clock3 size={15} aria-hidden="true" /><span>TIMELINE</span></div><button type="button" onClick={() => stepTimeline(-1)} aria-label="Année précédente"><ChevronLeft size={16} /></button><input type="range" min="1858" max="2025" value={timelineYear} onChange={(event) => setTimelineYear(Number(event.target.value))} aria-label="Année des relations" /><button type="button" onClick={() => stepTimeline(1)} aria-label="Année suivante"><ChevronRight size={16} /></button><strong>{timelineYear}</strong><p>{activeRelations.length} liens actifs</p></section>
+          <section className="relation-timeline" aria-label="Timeline des relations"><div><Clock3 size={15} aria-hidden="true" /><span>TIMELINE</span></div><button type="button" onClick={() => stepTimeline(-1)} aria-label="Année précédente"><ChevronLeft size={16} /></button><div className="timeline-slider-wrap"><input type="range" min="1858" max="2025" value={timelineYear} onChange={(event) => setTimelineYear(Number(event.target.value))} onPointerMove={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setTimelinePreviewYear(Math.round(1858 + ((event.clientX - rect.left) / rect.width) * (2025 - 1858))); }} onPointerLeave={() => setTimelinePreviewYear(null)} aria-label="Année des relations" />{timelinePreviewYear !== null && <div className="timeline-preview"><b>{timelinePreviewYear}</b><span>{RELATIONS.filter((relation) => relation.start <= timelinePreviewYear && (relation.end === undefined || relation.end >= timelinePreviewYear)).length} liens du corpus</span></div>}</div><button type="button" onClick={() => stepTimeline(1)} aria-label="Année suivante"><ChevronRight size={16} /></button><strong>{timelineYear}</strong><p>{activeRelations.length} liens actifs</p></section>
 
           <aside className={`world-detail-panel ${selectedCountry || selectedOrganization ? "is-open" : ""}`} aria-live="polite" aria-label="Fiche acteur"><button className="detail-close" type="button" onClick={() => { setSelectedCountry(null); setSelectedActorId(null); }} aria-label="Fermer la fiche"><X size={17} /></button>{selectedCountry && <><p className="eyebrow"><MapPin size={14} aria-hidden="true" /> FICHE PAYS / {selectedCountry.iso3}</p><h2>{selectedCountry.name}</h2><p className="country-capital">{selectedCountry.capital ? `Capitale : ${selectedCountry.capital}` : "Capitale non renseignée"}</p><div className="country-metrics">{INDICATORS.map((indicator) => <div key={indicator.id}><span style={{ backgroundColor: `rgb(${indicator.color.slice(0, 3).join(" ")})` }} /><p>{indicator.compact}</p><strong>{formatMetric(indicator.id, selectedCountry.indicators[indicator.id][indicatorYear])}</strong></div>)}</div><p className="country-note">{activeRelations.length} relation{activeRelations.length > 1 ? "s" : ""} visible{activeRelations.length > 1 ? "s" : ""} à la date sélectionnée, parmi le corpus de classification.</p><div className="actor-source-links"><a className="detail-link" href={countryWikipediaUrl(selectedCountry.name)} target="_blank" rel="noreferrer"><BookOpen size={14} aria-hidden="true" /> Wikipédia — {selectedCountry.name} <ExternalLink size={14} aria-hidden="true" /></a><a className="detail-link" href={`https://data.worldbank.org/country/${selectedCountry.iso2.toLowerCase()}`} target="_blank" rel="noreferrer">Banque mondiale <ExternalLink size={14} aria-hidden="true" /></a></div></>}{selectedOrganization && (() => { const reference = ORGANIZATION_REFERENCES[selectedOrganization.id]; return <><p className="eyebrow"><Building2 size={14} aria-hidden="true" /> ORGANISATION</p><h2>{selectedOrganization.acronym}</h2><p className="country-capital">{selectedOrganization.name}</p><div className="organization-stat"><strong>{activeRelations.length}</strong><span>liens actifs<br />dans le corpus</span></div><p className="country-note">{selectedOrganization.description}</p><div className="actor-source-links"><a className="detail-link" href={reference.wikipedia} target="_blank" rel="noreferrer"><BookOpen size={14} aria-hidden="true" /> Wikipédia <ExternalLink size={14} aria-hidden="true" /></a><a className="detail-link" href={reference.official} target="_blank" rel="noreferrer">Site officiel <ExternalLink size={14} aria-hidden="true" /></a></div></>; })()}</aside>
 
@@ -504,7 +655,7 @@ export default function Home() {
 
           <aside className={`bilateral-comparator ${isComparatorOpen ? "is-open" : ""}`} aria-label="Comparateur bilatéral"><button className="detail-close" type="button" onClick={() => setIsComparatorOpen(false)} aria-label="Fermer le comparateur"><X size={17} /></button><p className="eyebrow"><GitCompareArrows size={14} aria-hidden="true" /> COMPARATEUR BILATÉRAL</p><h3>Deux pays,<br /><i>une relation</i>.</h3><div className="comparator-selects"><label><span>PAYS A</span><select value={compareLeftId} onChange={(event) => setCompareLeftId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label><span className="compare-arrow">↔</span><label><span>PAYS B</span><select value={compareRightId} onChange={(event) => setCompareRightId(event.target.value)}>{countries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label></div><section className="comparison-history" aria-label="Évolution historique des relations"><div className="comparison-history-heading"><Activity size={14} /><span>ÉVOLUTION HISTORIQUE</span><b>{historyStart} — 2025</b></div>{bilateralHistory.length ? <div className="history-lines">{bilateralHistory.map((relation) => <div className="history-line" key={relation.id}><span>{relation.type}</span><div className="history-track"><i style={{ left: `${((relation.start - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%`, width: `${(((relation.end ?? 2025) - relation.start) / Math.max(1, 2025 - historyStart)) * 100}%`, backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><em style={{ left: `${((timelineYear - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%` }} /></div></div>)}</div> : <div className="comparison-empty">Aucune évolution relationnelle renseignée dans ce corpus pour cette paire.</div>}</section><div className="comparison-summary"><p>{compareLeft?.name ?? "Pays A"}<span>↔</span>{compareRight?.name ?? "Pays B"}</p>{bilateralRelations.length > 0 ? bilateralRelations.map((relation) => { const reference = relationReference(relation); return <article key={relation.id}><i style={{ backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><div><b>{relation.title}</b><small>{relation.type} · {relation.start}{relation.end ? `–${relation.end}` : "–aujourd’hui"}</small><span>{relation.detail}</span><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} <ExternalLink size={12} /></a></div></article>; }) : <div className="comparison-empty">Aucune relation active de ce corpus pour la période sélectionnée.</div>}</div><div className="comparison-exports"><button type="button" onClick={downloadComparisonCsv}><FileSpreadsheet size={14} /> CSV</button><button type="button" onClick={downloadComparisonPdf}><FileText size={14} /> Rapport PDF</button></div><button className="comparison-focus" type="button" onClick={() => { if (compareLeft && compareRight) { setSelectedActorId(null); setFocusView({ longitude: (compareLeft.position[0] + compareRight.position[0]) / 2, latitude: (compareLeft.position[1] + compareRight.position[1]) / 2, zoom: displayMode === "globe" ? 0.65 : 2.2 }); setViewKey((key) => key + 1); } }}><LocateFixed size={14} /> Cadrer les deux pays</button></aside>
 
-          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Vue monde</Button><Button className="instrument-button compare-trigger" variant="outline" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
+          <div className="world-map-actions"><Button className="instrument-button" variant="outline" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Vue monde</Button><Button className="instrument-button compare-trigger" variant="outline" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button snapshot-trigger" variant="outline" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Snapshot</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
         </section>
       </main>
 

@@ -68,3 +68,12 @@ Le mode globe doit être compris comme une visualisation exploratoire des relati
 | OrbitView, FirstPersonView, comparaison en écran scindé, extensions GPU avancées | **À planifier** | Ces modules ne font pas partie du MVP actuel ; ils sont pertinents pour des jeux de données substantiels et des scénarios spécialisés. |
 
 Le constat est donc : les **fondations cartographiques et exploratoires** demandées sont en place, mais les fonctions de contribution, d’édition, de validation documentaire et certains modes spécialisés restent à mettre en œuvre avant de pouvoir considérer l’ensemble des deux documents comme couvert.
+
+## Source de chaleur de conflit — décision de représentation
+
+| Élément | Constat vérifié | Décision |
+| --- | --- | --- |
+| [UCDP GED](https://ucdp.uu.se/downloads/) | Le jeu d’événements géoréférencés UCDP est disponible au téléchargement sous licence CC BY 4.0 ; la page liste un codebook et plusieurs formats. | UCDP est la source de référence prévue pour un calque d’intensité fondé sur des événements et non sur une estimation décorative. |
+| [API UCDP](https://ucdp.uu.se/apidocs/) | L’API expose les événements GED et prévoit des filtres de date et de géographie, mais l’accès automatisé requiert un jeton approuvé. | Ne pas intégrer un appel API non authentifié en production. Préparer l’interface et n’afficher une intensité que pour un extrait UCDP explicitement sourcé et daté. |
+
+Le calque sera étiqueté **« signaux de conflit du corpus »** tant qu’un extrait UCDP complet, versionné et approprié n’aura pas été ajouté. Il ne devra pas être présenté comme une mesure exhaustive ou actualisée de l’intensité de guerre mondiale.

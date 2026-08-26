@@ -1,5 +1,15 @@
 # Mise à jour Atlas Flux
 
+## Analyse guidée et vues spécialisées
+
+- [x] Identifier les sources réutilisables pour les zones de conflit et définir leurs limites de représentation.
+- [x] Étendre les typologies, les échelles et les règles de calques automatiques.
+- [x] Ajouter sélection de pays, organisations et zones avec mise en évidence du réseau.
+- [x] Ajouter des relations directionnelles et un panneau de détail par typologie.
+- [x] Ajouter vues spécialisées, chaleur de conflit et prévisualisation temporelle.
+- [x] Ajouter un export contextualisé de la vue, de l’époque et des relations actives.
+- [x] Vérifier l’expérience complète sur bureau et mobile.
+
 ## Graphique, export et sources vérifiables
 
 - [x] Auditer la couverture de l’application par rapport aux deux documents transmis.
