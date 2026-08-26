@@ -1,5 +1,14 @@
 # Mise à jour Atlas Flux
 
+## Relations géopolitiques interactives
+
+- [x] Structurer un premier jeu de relations documentées entre États et organisations.
+- [x] Ajouter des arcs colorés, filtrables et animés selon le type de lien et la période.
+- [x] Ajouter un mode globe 3D en complément de la carte plane.
+- [x] Ajouter une timeline interactive et des filtres de relations.
+- [x] Ajouter la recherche d’un pays ou d’une organisation avec mise en évidence.
+- [x] Vérifier le rendu et les interactions sur bureau et mobile.
+
 ## Correctif de rendu deck.gl
 
 - [x] Lire les documents de classification et de calques transmis.

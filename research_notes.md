@@ -43,3 +43,13 @@ Le correctif immédiat porte uniquement sur l’initialisation de la couche de p
 ### Diagnostic du correctif deck.gl
 
 L’assertion levée dans l’initialisation de `ScatterplotLayer` vérifie qu’une instance de calque n’a pas déjà été initialisée. La carte était recréée lors du changement de vue, mais le mémo React pouvait lui transmettre les mêmes instances de calques. La dépendance de mémoïsation inclut désormais la clé de vue : chaque recréation de carte reçoit donc de nouvelles instances de `ScatterplotLayer`.
+
+## Vue globe et relations — sources et structure initiale
+
+| Élément | Source ou base | Décision d’intégration |
+| --- | --- | --- |
+| Limites des pays | [Natural Earth](https://www.naturalearthdata.com/) via [geo-countries](https://github.com/datasets/geo-countries) | Utiliser le GeoJSON public de pays dans une `GeoJsonLayer` pour matérialiser les continents en vue globe. |
+| Relations | Système de classification transmis | Représenter un premier corpus de relations explicitement issu des exemples du document, avec son type, sa période et une mention de provenance. |
+| Recherche | Référentiel Banque mondiale et organisations du corpus | Chercher les pays et organisations disponibles ; une sélection mettra l’acteur et ses liens en avant. |
+
+Le mode globe doit être compris comme une visualisation exploratoire des relations structurées dans le corpus fourni. Chaque relation conserve une date de début, une date de fin éventuelle et un type pour le filtrage ; elle n’est pas présentée comme une assertion exhaustive sur les relations internationales.
