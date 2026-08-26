@@ -70,6 +70,11 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Déplacer le panneau de filtres à gauche, rendre la recherche centrée et conserver l’œil indépendant.
+- [x] Remplacer les indicateurs textuels « actif » par des interrupteurs Apple et une opacité reflétant chaque état, sans scrollbar interne redondante.
+- [x] Fermer le panneau contextuel gênant à chaque interaction directe avec la carte.
+- [x] Recomposer le symbole Atlas Flux en SVG original, symétrique et à noyau cyan, adapté à l’en-tête dans les deux thèmes.
+- [x] Transformer la timeline en plage temporelle à deux bornes, avec dates JJ/MM/AAAA flottant au-dessus de chaque poignée et contrôles de période à la demande.
 - [x] Personnaliser la scène cartographique Atlas Flux au-delà du style Carto générique : fond MapLibre dédié, continents Natural Earth et repères rendus par deck.gl.
 - [x] Ajouter un halo cyan focalisé derrière les arcs et nœuds tout en conservant le trait sémantique par typologie.
 - [x] Réduire les surfaces massives et adopter des panneaux compacts, très floutés et translucides inspirés du langage Apple.

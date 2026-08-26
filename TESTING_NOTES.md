@@ -58,3 +58,13 @@
 | Mobile 375 × 812 | Panneau de filtres et timeline | La surface conserve un flou de verre dépoli, ses séparateurs faibles et ses contrôles arrondis sans perte de lisibilité ou de l’œil indépendant. La carte conserve son fond nocturne, ses flux cyan et son contraste sous le panneau. |
 | Correspondance de référence | Revue des captures bureau et mobile | Les attributs demandés sont explicitement présents : scène nocturne bleu ardoise, contours continentaux discrets, flux cyan lumineux, cœur d’arc sémantique, surfaces translucides fortement floutées et densité de contrôles réduite. |
 | Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **13 tests Vitest** validés après la couche de continents, les repères et les halos cyan. |
+
+## Ajustements des panneaux et de la timeline
+
+| Parcours | Vérification | Résultat |
+| --- | --- | --- |
+| Bureau 1440 × 900 | Disposition des contrôles | Le panneau Filtres principaux est placé à gauche, la recherche est centrée et l’œil demeure une commande indépendante. |
+| Typologies | Revue du panneau de filtres | Les libellés « actif » sont remplacés par des interrupteurs de type Apple ; les liens désactivés deviennent transparents et la grille ne possède plus de scrollbar interne. |
+| Timeline | Captures bureau et mobile | La lecture temporelle affiche deux bornes DE/À en JJ/MM/AAAA et deux curseurs. Un clic sur « Timeline » ouvre les champs date et le calendrier de plage. |
+| Carte | Revue du gestionnaire de clic | Tout clic direct sur la carte masque l’introduction initiale pour libérer l’exploration. |
+| Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et **16 tests Vitest** validés, dont trois contrats d’interface Atlas Flux. |
