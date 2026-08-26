@@ -1,6 +1,6 @@
 # Charte UX permanente — Atlas Flux
 
-Cette charte s’applique à chaque ajout fonctionnel. Atlas Flux doit donner à voir un **poste d’observation**, et non un tableau de bord demandant un apprentissage préalable.
+Cette charte s’applique à chaque ajout fonctionnel. Elle reprend **strictement la palette fournie par l’utilisateur**, qui remplace toute ancienne couleur de marque ou interprétation décorative. Atlas Flux doit donner à voir un **poste d’observation**, et non un tableau de bord demandant un apprentissage préalable.
 
 | Principe | Règle de conception | Vérification pratique |
 | --- | --- | --- |
@@ -22,4 +22,4 @@ Cette charte s’applique à chaque ajout fonctionnel. Atlas Flux doit donner à
 | **Jaune repère** | `#F2C14E` | Faits clés, mesure pédagogique et attention modérée. |
 | **Corail alerte** | `#D95D4E` | Risque, conflit, urgence et action irréversible uniquement. |
 
-Le corail ne doit jamais devenir une couleur d’ambiance, de navigation courante ou de décoration. Toute nouvelle couleur ou interaction doit être évaluée à l’aune de cette charte avant son intégration.
+Le corail ne doit jamais devenir une couleur d’ambiance, de navigation courante ou de décoration. Les typologies militaires et sécuritaires emploient le **jaune repère** ; le corail est réservé aux cellules de conflit, aux seuils de gravité, aux erreurs et aux décisions irréversibles. Toute nouvelle couleur ou interaction doit être évaluée à l’aune de cette charte avant son intégration.

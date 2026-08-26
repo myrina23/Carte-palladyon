@@ -1,5 +1,15 @@
 # Mise à jour Atlas Flux
 
+## Charte utilisateur, filtres fusionnés et cohérence 3D
+
+- [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.
+- [x] Vérifier que chaque signal coloré conserve un libellé, une icône ou une valeur lisible.
+- [x] Fusionner les panneaux Filtres principaux et Typologies dans un seul espace de filtre.
+- [x] Consolider la preuve d’export du relevé PDF pour une combinaison active région, typologie et vue.
+- [x] Confirmer la vue A/B en écran scindé pour deux périodes distinctes.
+- [x] Rendre le focus régional identique en carte 2D, globe et vue tactique 3D.
+- [x] Revalider les vues, les exports et les rendus bureau/mobile après les dernières preuves de charte et d’export.
+
 ## Focus unifié des filtres principaux
 
 - [x] Retirer le panneau Analyse guidée et ses contrôles devenus redondants.

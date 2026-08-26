@@ -64,18 +64,18 @@ Une langue concise, factuelle et orientée vers l’observation. Les titres nomm
 
 Le mot-symbole utilise des capitales compactes espacées, accompagnées d’une marque angulaire : une rose des vents réduite à quatre pointes opposées, avec un cœur ajouré. Le symbole doit être reconnaissable sans texte, lisible dans un favicon et visible dans l’en-tête.
 
-### Signature Brand Color
+### Charte chromatique de référence utilisateur
 
-**Orange Méridien — `#FF6B35`** : une couleur de repère énergique, utilisée avec retenue pour signaler le mouvement, la sélection et les appels à l’action.
+La charte fournie est la référence normative d’Atlas Flux. **Encre `#112235`** porte la structure, les titres, le texte et les limites ; **Papier chaud `#FBF7F0`** soutient le confort de lecture et les espaces éditoriaux. **Teal actif `#008C95`** signale l’exploration et la navigation actives ; **Cyan data `#20C4D9`** les flux, liens, relations et repères cartographiques ; **Lilas contexte `#8B7AC8`** les scénarios, la prospective et les couches secondaires ; **Jaune repère `#F2C14E`** les faits clés, la pédagogie et l’attention modérée. **Corail alerte `#D95D4E`** est strictement réservé au risque, à l’urgence ou aux actions destructives et irréversibles.
 
 ## Style Decisions
 
-* **Orange Méridien** reste réservé aux sélections actives, trajectoires prioritaires, actions principales et chiffres clés ; les couches secondaires se répartissent entre vert d’eau, jaune doux et neutres minéraux.
+* Aucun orange de marque générique ne doit être utilisé. **Teal actif** porte les sélections et actions réversibles ; **cyan data** porte les liens ; **lilas contexte** porte les lectures secondaires ; **jaune repère** porte la pédagogie ; **corail alerte** ne sert qu’aux risques, alertes critiques et actions irréversibles.
 * Chaque section importante doit intégrer au moins une primitive cartographique Atlas Flux : repères de coordonnées, contour interrompu, segment de rose angulaire, label marginal ou règle graduée.
 * Les sections claires doivent rester des **rapports de terrain imprimés** du même observatoire, avec trames, graduations et repères géographiques, plutôt que des blocs éditoriaux génériques.
 * La rose des vents Atlas Flux devient un repère d’activation répété dans les panneaux, sélections et balises de relevé, au-delà du seul logotype.
 * Les actions restent en français observationnel : elles proposent de recentrer, comparer ou produire un relevé, plutôt que d’employer des libellés utilitaires génériques.
 * La carte conserve la priorité visuelle ; textes et contrôles doivent se lire comme des annotations instrumentales posées sur le territoire.
 * Les contrôles doivent expliquer leur usage par leur forme, leur placement, une icône familière et un état perceptible ; les précisions secondaires apparaissent au survol ou à la demande, jamais dans un tutoriel bloquant.
-* La palette est sémantique : teal pour l’activation, cyan pour les flux, lilas pour le contexte, jaune pour le repère et corail uniquement pour le risque, la gravité ou une action irréversible.
+* La couleur ne porte jamais le sens seule : chaque signal s’accompagne d’un libellé, d’une icône ou d’une valeur lisible.
 * Les interactions reprennent les conventions cartographiques habituelles — clic de sélection, glisser-déposer de déplacement, zoom à la molette ou au pincement, curseur temporel — afin de réduire toute charge d’apprentissage.

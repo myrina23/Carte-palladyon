@@ -21,6 +21,23 @@ export type AtlasPdfReport = {
   mapImage?: string | null;
 };
 
+type CanvasContext = { drawImage: (image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number) => void };
+export type AtlasMapCanvas = { width: number; height: number; getContext: (contextId: "2d") => CanvasContext | null; toDataURL: (type?: string) => string };
+
+export function composeMapCanvases(canvases: AtlasMapCanvas[], createCanvas: () => AtlasMapCanvas = () => document.createElement("canvas") as unknown as AtlasMapCanvas) {
+  if (!canvases.length) return null;
+  const width = Math.max(...canvases.map((canvas) => canvas.width));
+  const height = Math.max(...canvases.map((canvas) => canvas.height));
+  if (!width || !height) return null;
+  const composite = createCanvas();
+  composite.width = width;
+  composite.height = height;
+  const context = composite.getContext("2d");
+  if (!context) return null;
+  canvases.forEach((canvas) => context.drawImage(canvas as unknown as CanvasImageSource, 0, 0, width, height));
+  return composite.toDataURL("image/png");
+}
+
 function csvCell(value: unknown) {
   const text = String(value ?? "");
   return /[;"\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -57,7 +74,7 @@ function drawRelationChart(report: jsPDF, relations: AtlasExportRelation[], y: n
 export function createAtlasPdfReport(specification: AtlasPdfReport) {
   const report = new jsPDF({ unit: "pt", format: "a4" });
   report.setFillColor(16, 26, 36); report.rect(0, 0, 595, 118, "F");
-  report.setTextColor(255, 107, 53); report.setFontSize(10); report.text(specification.eyebrow, 42, 42);
+  report.setTextColor(0, 140, 149); report.setFontSize(10); report.text(specification.eyebrow, 42, 42);
   report.setTextColor(246, 240, 229); report.setFontSize(23); report.text(specification.headline, 42, 78);
   report.setTextColor(31, 47, 57); report.setFontSize(10);
   specification.metadata.forEach((line, index) => report.text(line, 42, 150 + index * 17));
