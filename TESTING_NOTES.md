@@ -96,3 +96,12 @@
 | Toggles de typologie | Le conteneur clippe désormais la pastille interne ; le point blanc ne déborde plus hors de l’interrupteur. |
 | Surface du panneau | La grille de liens adopte une surface bleu-verre translucide cohérente avec les filtres au lieu d’un fond visuellement noir. |
 | Validation | Captures bureau et mobile contrôlées ; `pnpm check` et **16 tests Vitest** validés. |
+
+## Extensions Palladyon appliquées
+
+| Composant | Intégration Atlas Flux | Résultat |
+| --- | --- | --- |
+| Dock | Barre d’actions globale | Les actions Comparer, Recentrer, Annoter, Enregistrer, exports et partage sont regroupées dans un dock compact, à labels de survol et navigation clavier. |
+| MorphingPopover | Fiche relationnelle | La fiche utilise un panneau animé contrôlé par la sélection de relation, avec fermeture au clic extérieur, à Échap et par le bouton de fermeture. |
+| ScrollArea | Sources relationnelles | Les références associées sont regroupées dans une zone de défilement vitrée, de hauteur contrainte et accessible. |
+| Validation | Rendu et tests | Desktop et mobile contrôlés pour le Dock ; compilation et **17 tests Vitest** validés, dont le contrat couvrant les trois primitives. |

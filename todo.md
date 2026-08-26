@@ -70,6 +70,9 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Remplacer la barre d’actions globale par le Dock Palladyon adapté à Atlas Flux.
+- [x] Utiliser MorphingPopover Palladyon pour les fiches relationnelles sans perdre les actions de détail.
+- [x] Adapter le ScrollArea Palladyon dans le composant local et l’intégrer à la liste longue de sources de la fiche relationnelle, avec une barre de défilement vitrée.
 - [x] Supprimer la poignée visuelle doublonnée de la timeline Palladyon.
 - [x] Corriger le fond noir incohérent introduit dans le panneau de filtres.
 - [x] Contenir les pastilles des toggles Palladyon afin qu’aucun rond blanc ne déborde.

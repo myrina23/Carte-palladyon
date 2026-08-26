@@ -1,3 +1,5 @@
+// Adaptation locale de la primitive ScrollArea fournie dans l’archive Palladyon,
+// enrichie du support horizontal déjà requis par Atlas Flux.
 import * as React from "react";
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 

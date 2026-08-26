@@ -9,6 +9,10 @@ const timelineSegmentStyles = readFileSync(new URL("../client/src/pages/timeline
 const palladyonStyles = readFileSync(new URL("../client/src/pages/palladyon-adoption.css", import.meta.url), "utf8");
 const palladyonSwitch = readFileSync(new URL("../client/src/components/ui/switch.tsx", import.meta.url), "utf8");
 const palladyonSlider = readFileSync(new URL("../client/src/components/ui/slider.tsx", import.meta.url), "utf8");
+const palladyonScrollArea = readFileSync(new URL("../client/src/components/ui/scroll-area.tsx", import.meta.url), "utf8");
+const palladyonLayoutStyles = readFileSync(new URL("../client/src/pages/palladyon-layout.css", import.meta.url), "utf8");
+const atlasDock = readFileSync(new URL("../client/src/components/palladyon/AtlasDock.tsx", import.meta.url), "utf8");
+const atlasMorphingPopover = readFileSync(new URL("../client/src/components/palladyon/AtlasMorphingPopover.tsx", import.meta.url), "utf8");
 
 describe("Atlas Flux · contrats d’interface cartographique", () => {
   it("présente des interrupteurs Palladyon de typologie sans indicateur textuel", () => {
@@ -42,5 +46,18 @@ describe("Atlas Flux · contrats d’interface cartographique", () => {
     expect(relationStyles).toContain(".timeline-handle-label");
     expect(homeSource).not.toContain("demo-corpus-chip");
     expect(timelineRefinementStyles).toContain(".world-filter-panel::-webkit-scrollbar-thumb");
+  });
+
+  it("utilise les primitives Palladyon étendues pour les actions, fiches et sources", () => {
+    expect(homeSource).toContain('import { AtlasDock, AtlasDockIcon, AtlasDockItem } from "@/components/palladyon/AtlasDock"');
+    expect(homeSource).toContain('import { AtlasMorphingContent, AtlasMorphingPopover, AtlasMorphingTrigger } from "@/components/palladyon/AtlasMorphingPopover"');
+    expect(homeSource).toContain('<AtlasDock>');
+    expect(homeSource).toContain('<AtlasMorphingPopover open={Boolean(selectedRelation)}');
+    expect(homeSource).toContain('<ScrollArea className="palladyon-source-scroll">');
+    expect(atlasDock).toContain('role="toolbar"');
+    expect(atlasMorphingPopover).toContain('layoutId={`atlas-morph-trigger-${context.id}`}');
+    expect(palladyonLayoutStyles).toContain('.world-map-action-bar{display:none!important}');
+    expect(palladyonLayoutStyles).toContain('.palladyon-source-scroll');
+    expect(palladyonScrollArea).toContain("primitive ScrollArea fournie dans l’archive Palladyon");
   });
 });
