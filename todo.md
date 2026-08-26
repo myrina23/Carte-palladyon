@@ -70,6 +70,9 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Inclure la fiche relationnelle MorphingPopover dans le panneau de détail, sans superposition parasite.
+- [x] Placer l’horloge Timeline à gauche de la piste dans un seul bloc compact et retirer l’icône calendrier redondante.
+- [x] Annuler les couleurs inline involontaires des contrôles de projection et uniformiser leurs boutons.
 - [x] Remplacer la barre d’actions globale par le Dock Palladyon adapté à Atlas Flux.
 - [x] Utiliser MorphingPopover Palladyon pour les fiches relationnelles sans perdre les actions de détail.
 - [x] Adapter le ScrollArea Palladyon dans le composant local et l’intégrer à la liste longue de sources de la fiche relationnelle, avec une barre de défilement vitrée.

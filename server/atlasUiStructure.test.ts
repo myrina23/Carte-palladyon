@@ -53,11 +53,14 @@ describe("Atlas Flux · contrats d’interface cartographique", () => {
     expect(homeSource).toContain('import { AtlasMorphingContent, AtlasMorphingPopover, AtlasMorphingTrigger } from "@/components/palladyon/AtlasMorphingPopover"');
     expect(homeSource).toContain('<AtlasDock>');
     expect(homeSource).toContain('<AtlasMorphingPopover open={Boolean(selectedRelation)}');
+    expect(homeSource).toContain('className={`world-detail-panel ${selectedCountry || selectedOrganization || selectedRelation ? "is-open" : ""} ${selectedRelation ? "relation-open" : ""}`}');
+    expect(homeSource).toContain('className="relation-in-detail"');
     expect(homeSource).toContain('<ScrollArea className="palladyon-source-scroll">');
     expect(atlasDock).toContain('role="toolbar"');
     expect(atlasMorphingPopover).toContain('layoutId={`atlas-morph-trigger-${context.id}`}');
     expect(palladyonLayoutStyles).toContain('.world-map-action-bar{display:none!important}');
     expect(palladyonLayoutStyles).toContain('.palladyon-source-scroll');
+    expect(palladyonLayoutStyles).toContain('.world-detail-panel .relation-detail-inline');
     expect(palladyonScrollArea).toContain("primitive ScrollArea fournie dans l’archive Palladyon");
   });
 });

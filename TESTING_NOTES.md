@@ -105,3 +105,12 @@
 | MorphingPopover | Fiche relationnelle | La fiche utilise un panneau animé contrôlé par la sélection de relation, avec fermeture au clic extérieur, à Échap et par le bouton de fermeture. |
 | ScrollArea | Sources relationnelles | Les références associées sont regroupées dans une zone de défilement vitrée, de hauteur contrainte et accessible. |
 | Validation | Rendu et tests | Desktop et mobile contrôlés pour le Dock ; compilation et **17 tests Vitest** validés, dont le contrat couvrant les trois primitives. |
+
+## Corrections issues de l’éditeur visuel
+
+| Vérification | Résultat |
+| --- | --- |
+| Fiche relationnelle | La sélection de relation ferme les fiches pays et organisation, puis rend le MorphingPopover à l’intérieur du panneau de détail unique, sans superposition de panneaux. |
+| Timeline | L’horloge et le libellé sont réunis à gauche dans le même segment que la piste ; l’icône calendrier redondante est masquée. |
+| Projection | Les couleurs inline ajoutées par l’éditeur sont retirées ; les boutons 2D, Globe et Tac retrouvent la surface transparente de la charte. |
+| Validation | Les rendus bureau/mobile ont été contrôlés ; `pnpm check` et **17 tests Vitest** sont validés. |
