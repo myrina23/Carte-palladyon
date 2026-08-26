@@ -49,6 +49,18 @@
 - [x] Recréer le logo sous forme vectorielle transparente, sans fond matriciel.
 - [x] Vérifier les nouveaux rendus sombre et clair sur bureau et mobile.
 
+## Cohérence relationnelle et filtres modernes
+
+- [x] Assurer que chaque arc, étiquette et fiche utilise exactement la couleur définie pour sa typologie.
+- [x] Réinstaller l’œil de visibilité dans une commande séparée, toujours accessible lorsque les filtres sont masqués.
+- [x] Réintroduire le choix d’organisations dans le panneau de filtres visible.
+- [x] Supprimer la sous-section de période à molettes redondante et conserver la période de lecture.
+- [x] Rendre la recherche prédictive par anticipation et hiérarchiser les suggestions utiles dès la saisie.
+- [x] Afficher le drapeau ou marqueur territorial à côté de chaque résultat pays dans la recherche.
+- [x] Ajouter un drapeau ou marqueur territorial cohérent dans les sélecteurs d’acteurs, notamment le comparateur A/B.
+- [x] Étendre le langage translucide, superposé et moderne aux composants cartographiques : recherche, panneaux, toggles et sliders.
+- [x] Vérifier au rendu mobile la recherche drapeautée et l’ouverture du comparateur A/B avec drapeaux, puis consigner une preuve observable.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.

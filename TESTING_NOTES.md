@@ -27,3 +27,16 @@
 | Logo | Inspection du rendu | La marque est un SVG transparent composé de deux formes angulaires, sans fond matriciel. |
 
 - La compilation TypeScript et les **13 tests Vitest** passent après les ajustements visuels.
+
+## Cohérence relationnelle et filtres modernes
+
+| Parcours | Vérification | Résultat |
+| --- | --- | --- |
+| Couleurs militaires | Revue du registre de typologies et des couches DeckGL | L’arc, la flèche et les fiches utilisent désormais la même couleur corail pour une relation militaire, y compris en comparaison temporelle. |
+| Recherche anticipative | Saisie navigateur `fra` | Treize résultats sont classés sans limite arbitraire ; les pays et territoires affichent leur drapeau ou un marqueur territorial. |
+| Œil de filtres | Navigateur | Après masquage du panneau, l’œil reste visible avec le libellé d’accessibilité « Afficher les filtres ». |
+| Mobile | Capture 375 × 812 | Organisations remontées, molettes supprimées, repère démonstratif non chevauchant et commandes de carte lisibles. |
+| Vérification technique | `pnpm check` et `pnpm test` | Compilation réussie et 13 tests Vitest validés. |
+| Sélecteurs A/B | Inspection navigateur des options du comparateur | Chaque pays est préfixé par son drapeau ISO ; les unités sans code ISO affichent le marqueur territorial `◉`. |
+| Mobile 375 × 812 | Captures `?search=fra` et `?compare=1` | Les résultats France et territoires affichent drapeaux ou marqueurs ; les valeurs actives A/B affichent les drapeaux de Turquie et Grèce. |
+| Preuve visuelle mobile | Captures locales contrôlées | `webdev-preview-root-1787732587914905412-5563.png` rend les drapeaux France et Polynésie française, ainsi que les marqueurs territoriaux ; `webdev-preview-root-1787732591887024980-4527.png` rend les valeurs A/B 🇹🇷 Türkiye et 🇬🇷 Greece. |
