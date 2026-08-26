@@ -56,11 +56,15 @@ describe("Atlas Flux · contrats d’interface cartographique", () => {
     expect(homeSource).toContain('className={`world-detail-panel ${selectedCountry || selectedOrganization || selectedRelation ? "is-open" : ""} ${selectedRelation ? "relation-open" : ""}`}');
     expect(homeSource).toContain('className="relation-in-detail"');
     expect(homeSource).toContain('<ScrollArea className="palladyon-source-scroll">');
+    expect(homeSource).toContain('className="detail-source-register"');
+    expect(homeSource).toContain('id="timeline-fullscreen-input"');
     expect(atlasDock).toContain('role="toolbar"');
     expect(atlasMorphingPopover).toContain('layoutId={`atlas-morph-trigger-${context.id}`}');
     expect(palladyonLayoutStyles).toContain('.world-map-action-bar{display:none!important}');
     expect(palladyonLayoutStyles).toContain('.palladyon-source-scroll');
     expect(palladyonLayoutStyles).toContain('.world-detail-panel .relation-detail-inline');
+    expect(palladyonLayoutStyles).toContain('.detail-source-register');
+    expect(palladyonLayoutStyles).toContain('body:has(#timeline-fullscreen-input:checked) .relation-timeline');
     expect(palladyonScrollArea).toContain("primitive ScrollArea fournie dans l’archive Palladyon");
   });
 });

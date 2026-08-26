@@ -114,3 +114,12 @@
 | Timeline | L’horloge et le libellé sont réunis à gauche dans le même segment que la piste ; l’icône calendrier redondante est masquée. |
 | Projection | Les couleurs inline ajoutées par l’éditeur sont retirées ; les boutons 2D, Globe et Tac retrouvent la surface transparente de la charte. |
 | Validation | Les rendus bureau/mobile ont été contrôlés ; `pnpm check` et **17 tests Vitest** sont validés. |
+
+## Sources intégrées et Timeline plein écran
+
+| Vérification | Résultat |
+| --- | --- |
+| Sources dans la fiche | Les pays, organisations et relations affichent une liste de références directement dans la fiche, avec un compteur dédupliqué par URL. L’encart contextuel externe est masqué. |
+| Contraste | Les libellés secondaires, valeurs et liens de sources utilisent désormais des teintes distinctes sur les surfaces bleu-verre. |
+| Timeline mobile | Le contrôle dédié ouvre la Timeline en position fixe ; le script de vérification confirme l’état étendu puis restauré à 375 × 812. |
+| Validation | `pnpm check` et **17 tests Vitest** validés après ajout du registre de sources et du plein écran. |

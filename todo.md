@@ -70,11 +70,11 @@
 
 ## Refonte nocturne Apple-style
 
-- [ ] Afficher le nombre total de sources et intégrer les références directement dans chaque fiche, sans encart externe.
-- [ ] Renforcer le contraste ton sur ton et la lisibilité des textes dans les fiches et sources.
-- [ ] Ajouter un mode Timeline plein écran, adapté notamment aux petits écrans.
+- [x] Afficher le nombre total de sources et intégrer les références directement dans chaque fiche, sans encart externe.
+- [x] Renforcer le contraste ton sur ton et la lisibilité des textes dans les fiches et sources.
+- [x] Ajouter un mode Timeline plein écran, adapté notamment aux petits écrans.
 - [x] PRIORITÉ — Créer et vérifier le checkpoint Atlas Flux qui servira réellement au ZIP téléchargeable, sans ancienne maquette Atlas Connect / carte-deckgl.
-- [ ] Produire un bilan concis des fonctionnalités réalisées, des données intégrées et des chantiers restants.
+- [x] Produire un bilan concis des fonctionnalités réalisées, des données intégrées et des chantiers restants.
 - [x] Inclure la fiche relationnelle MorphingPopover dans le panneau de détail, sans superposition parasite.
 - [x] Placer l’horloge Timeline à gauche de la piste dans un seul bloc compact et retirer l’icône calendrier redondante.
 - [x] Annuler les couleurs inline involontaires des contrôles de projection et uniformiser leurs boutons.
