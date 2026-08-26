@@ -4,6 +4,7 @@ import { _GlobeView as GlobeView, FlyToInterpolator } from "@deck.gl/core";
 import { ArcLayer, GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { startLogin } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,6 +30,8 @@ import {
   Crosshair,
   Database,
   ExternalLink,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
   FileText,
   Filter,
@@ -37,11 +40,14 @@ import {
   Layers3,
   LocateFixed,
   MapPin,
+  Moon,
   Landmark,
   PenLine,
   Printer,
   Radar,
   Search,
+  Share2,
+  Sun,
   UsersRound,
   X,
 } from "lucide-react";
@@ -123,20 +129,20 @@ const INDICATORS: Array<{ id: IndicatorId; label: string; compact: string; sourc
 
 const RELATION_TYPES: Array<{ id: RelationType; label: string; short: string; color: [number, number, number] }> = [
   { id: "geopolitique", label: "Géopolitique", short: "GÉO", color: [32, 196, 217] },
-  { id: "militaire", label: "Militaire", short: "MIL", color: [242, 193, 78] },
+  { id: "militaire", label: "Militaire", short: "MIL", color: [224, 109, 77] },
   { id: "economique", label: "Économique", short: "ÉCO", color: [0, 140, 149] },
-  { id: "commercial", label: "Commercial", short: "COM", color: [32, 196, 217] },
+  { id: "commercial", label: "Commercial", short: "COM", color: [44, 142, 222] },
   { id: "technologique", label: "Technologique", short: "TEC", color: [139, 122, 200] },
-  { id: "scientifique", label: "Scientifique", short: "SCI", color: [0, 140, 149] },
-  { id: "culturel", label: "Culturel", short: "CUL", color: [242, 193, 78] },
-  { id: "historique", label: "Historique", short: "HIS", color: [139, 122, 200] },
-  { id: "migratoire", label: "Migratoire", short: "MIG", color: [32, 196, 217] },
-  { id: "ressources", label: "Ressources", short: "RES", color: [242, 193, 78] },
-  { id: "securitaire", label: "Sécuritaire", short: "SÉC", color: [242, 193, 78] },
-  { id: "ideologique", label: "Idéologique", short: "IDÉ", color: [139, 122, 200] },
-  { id: "financier", label: "Financier", short: "FIN", color: [0, 140, 149] },
-  { id: "numerique", label: "Numérique", short: "NUM", color: [32, 196, 217] },
-  { id: "juridique", label: "Juridique", short: "JUR", color: [0, 140, 149] },
+  { id: "scientifique", label: "Scientifique", short: "SCI", color: [77, 177, 117] },
+  { id: "culturel", label: "Culturel", short: "CUL", color: [232, 151, 80] },
+  { id: "historique", label: "Historique", short: "HIS", color: [167, 99, 151] },
+  { id: "migratoire", label: "Migratoire", short: "MIG", color: [78, 181, 184] },
+  { id: "ressources", label: "Ressources", short: "RES", color: [181, 144, 66] },
+  { id: "securitaire", label: "Sécuritaire", short: "SÉC", color: [217, 93, 78] },
+  { id: "ideologique", label: "Idéologique", short: "IDÉ", color: [178, 90, 182] },
+  { id: "financier", label: "Financier", short: "FIN", color: [52, 105, 183] },
+  { id: "numerique", label: "Numérique", short: "NUM", color: [91, 185, 255] },
+  { id: "juridique", label: "Juridique", short: "JUR", color: [59, 154, 125] },
 ];
 
 const RELATION_LEGENDS: Record<RelationType, { definition: string; reading: string; cue: string }> = {
@@ -335,6 +341,7 @@ export default function Home() {
   // startLogin() during render (no href={startLogin()}) — it mints a one-time
   // nonce cookie and must run only at the moment of navigation.
   let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const [countries, setCountries] = useState<CountryDatum[]>([]);
   const [boundaries, setBoundaries] = useState<any>(null);
@@ -379,6 +386,9 @@ export default function Home() {
   const [isComparatorOpen, setIsComparatorOpen] = useState(() => new URLSearchParams(window.location.search).get("compare") === "1");
   const [hoveredRelation, setHoveredRelation] = useState<{ relation: Relation; x: number; y: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("search") ?? "");
+  const [areFiltersVisible, setAreFiltersVisible] = useState(true);
+  const [shareNotice, setShareNotice] = useState("");
+  const [isPeriodAnimating, setIsPeriodAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dataError, setDataError] = useState(false);
   const [viewKey, setViewKey] = useState(0);
@@ -403,6 +413,12 @@ export default function Home() {
     if (displayMode !== "globe") return;
     setGlobeCamera((current) => ({ ...projectionView, transitionDuration: current ? 720 : 0, transitionInterpolator: new FlyToInterpolator() }));
   }, [displayMode, projectionView]);
+
+  useEffect(() => {
+    const payload = new URLSearchParams(window.location.search).get("snapshot");
+    if (!payload) return;
+    try { applySavedSnapshot(JSON.parse(decodeURIComponent(window.atob(payload))) as SavedSnapshot); } catch { setShareNotice("Le lien de relevé reçu est incomplet."); }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -529,10 +545,11 @@ export default function Home() {
   const searchResults = useMemo<SearchEntry[]>(() => {
     const query = normalizeSearch(searchQuery.trim());
     if (!query) return [];
-    const countryEntries = allCountries.filter((country) => normalizeSearch(country.name).includes(query) || normalizeSearch(country.iso3).includes(query)).map((country) => ({ id: country.iso3, label: country.name, kind: country.entityKind === "territory" ? "Territoire" as const : "Pays" as const, position: country.position, country }));
-    const organizationEntries = ORGANIZATIONS.filter((organization) => normalizeSearch(organization.name).includes(query) || normalizeSearch(organization.acronym).includes(query)).map((organization) => ({ id: organization.id, label: organization.name, kind: "Organisation" as const, position: organization.position, organization }));
-    const zoneEntries = ANALYSIS_ZONES.filter((zone) => normalizeSearch(zone.label).includes(query)).map((zone) => ({ id: zone.id, label: zone.label, kind: "Zone" as const, position: zone.position, region: zone.region }));
-    return [...countryEntries, ...organizationEntries, ...zoneEntries].slice(0, 7);
+    const score = (label: string, aliases: string[] = []) => { const values = [label, ...aliases].map(normalizeSearch); return values.some((value) => value === query) ? 0 : values.some((value) => value.startsWith(query)) ? 1 : values.some((value) => value.split(/[\s-]+/).some((word) => word.startsWith(query))) ? 2 : 3; };
+    const countryEntries = allCountries.filter((country) => normalizeSearch(country.name).includes(query) || normalizeSearch(country.iso3).includes(query) || normalizeSearch(country.sovereign ?? "").includes(query)).map((country) => ({ id: country.iso3, label: country.name, kind: country.entityKind === "territory" ? "Territoire" as const : "Pays" as const, position: country.position, country, score: score(country.name, [country.iso3, country.sovereign ?? ""]) }));
+    const organizationEntries = ORGANIZATIONS.filter((organization) => normalizeSearch(organization.name).includes(query) || normalizeSearch(organization.acronym).includes(query)).map((organization) => ({ id: organization.id, label: organization.name, kind: "Organisation" as const, position: organization.position, organization, score: score(organization.name, [organization.acronym]) }));
+    const zoneEntries = ANALYSIS_ZONES.filter((zone) => normalizeSearch(zone.label).includes(query)).map((zone) => ({ id: zone.id, label: zone.label, kind: "Zone" as const, position: zone.position, region: zone.region, score: score(zone.label) }));
+    return [...countryEntries, ...organizationEntries, ...zoneEntries].sort((left, right) => left.score - right.score || left.label.localeCompare(right.label, "fr")).map(({ score: _score, ...entry }) => entry);
   }, [allCountries, searchQuery]);
 
   const conflictSignals = useMemo<UcdpConflictCell[]>(() => UCDP_CONFLICT_CELLS.filter((cell) => (analysisMode === "evolution" ? cell.year >= evolutionStart && cell.year <= evolutionEnd : cell.year === timelineYear) && cell.fatalities >= gravityThreshold && (activeRegion === "all" || conflictCellRegion(cell.position) === activeRegion)), [activeRegion, analysisMode, evolutionEnd, evolutionStart, gravityThreshold, timelineYear]);
@@ -706,6 +723,12 @@ export default function Home() {
   }
 
   function selectCountryFromMap(country: CountryDatum) {
+    if (!isComparatorOpen && selectedCountry?.iso3 === country.iso3) {
+      setSelectedCountry(null);
+      setSelectedActorId(null);
+      setSelectedRelation(null);
+      return;
+    }
     if (isComparatorOpen && compareRightId && compareRightId !== country.iso3) {
       setCompareLeftId(compareRightId);
       setCompareRightId(country.iso3);
@@ -804,7 +827,6 @@ export default function Home() {
 
   function toggleRelationType(id: RelationType) {
     setVisibleRelationTypes((current) => ({ ...current, [id]: !current[id] }));
-    setSelectedLegendType(id);
     setAnalysisMode(analysisModeForType(id));
     setShowConflictHeat(id === "militaire" || id === "securitaire");
   }
@@ -840,6 +862,9 @@ export default function Home() {
       if (next < periodStartDate) setPeriodStartDate(next);
     }
     setTimelineYear(next.getFullYear());
+    setIsPeriodAnimating(false);
+    window.requestAnimationFrame(() => setIsPeriodAnimating(true));
+    window.setTimeout(() => setIsPeriodAnimating(false), 190);
   }
 
   function selectRelationType(id: RelationType) {
@@ -927,6 +952,23 @@ export default function Home() {
     window.localStorage.setItem("atlas-flux-snapshots", JSON.stringify(next));
   }
 
+  async function shareSavedSnapshot(snapshot: SavedSnapshot | undefined = savedSnapshots[0]) {
+    if (!snapshot) { setShareNotice("Enregistrez d’abord un relevé à partager."); return; }
+    const url = new URL(window.location.href);
+    url.searchParams.set("snapshot", window.btoa(encodeURIComponent(JSON.stringify(snapshot))));
+    const shareData = { title: `Atlas Flux · ${snapshot.name}`, text: `Relevé filtré Atlas Flux : ${snapshot.name}`, url: url.toString() };
+    try {
+      const nativeShare = (navigator as unknown as { share?: (data: ShareData) => Promise<void> }).share;
+      if (nativeShare) {
+        await nativeShare(shareData);
+        setShareNotice("Lien de relevé partagé.");
+      } else {
+        await navigator.clipboard?.writeText(url.toString());
+        setShareNotice("Lien de relevé copié.");
+      }
+    } catch { setShareNotice("Partage annulé."); }
+  }
+
   function tooltipFor(object: unknown, layerId?: string) {
     if (layerId?.startsWith("country-click-target")) {
       const properties = (object as any)?.properties ?? {};
@@ -957,16 +999,16 @@ export default function Home() {
   }
 
   return (
-    <div className={`atlas-shell atlas-world-shell ${displayMode === "globe" ? "is-globe-mode" : ""} ${displayMode === "tactical" ? "is-tactical-mode" : ""} ${analysisMode === "evolution" ? "is-evolution-mode" : ""}`}>
+    <div className={`atlas-shell atlas-world-shell theme-${theme} ${displayMode === "globe" ? "is-globe-mode" : ""} ${displayMode === "tactical" ? "is-tactical-mode" : ""} ${analysisMode === "evolution" ? "is-evolution-mode" : ""}`}>
       <header className="atlas-header" aria-label="Navigation principale">
-        <a className="atlas-brand" href="#observatoire" aria-label="Atlas Flux — observatoire mondial"><Crosshair className="atlas-mark atlas-mark-icon" aria-hidden="true" /><span>ATLAS <em>FLUX</em></span></a>
+        <a className="atlas-brand" href="#observatoire" aria-label="Atlas Flux — observatoire mondial"><img className="atlas-mark atlas-logo-image" src="/manus-storage/atlas-flux-logo-reference_b24b9ab7.png" alt="" /><span>ATLAS <em>FLUX</em></span></a>
         <div className="atlas-header-meta"><span className="live-dot" /><span>MONDE / RELATIONS</span><span className="header-rule" /><span>CARTOGRAPHIE INTERACTIVE</span></div>
-        <a className="source-link" href="https://data.worldbank.org/" target="_blank" rel="noreferrer">Sources ouvertes <ArrowUpRight size={15} aria-hidden="true" /></a>
+        <div className="atlas-header-actions"><a className="source-link" href="https://data.worldbank.org/" target="_blank" rel="noreferrer">Sources ouvertes <ArrowUpRight size={15} aria-hidden="true" /></a><button type="button" className="theme-toggle" onClick={toggleTheme} title={theme === "dark" ? "Passer au thème clair" : "Passer au thème sombre"} aria-label={theme === "dark" ? "Passer au thème clair" : "Passer au thème sombre"}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</button></div>
       </header>
 
       <main id="observatoire" className="world-observatory">
-        <section ref={mapStageRef} className="world-map-stage" aria-label="Carte mondiale des relations géopolitiques">
-          <div className="map-mode-controls" aria-label="Mode de projection"><span><Globe2 size={14} aria-hidden="true" /> VUE</span><div className="display-mode-switch"><button type="button" title="Carte plane : déplacer et zoomer selon les conventions cartographiques" aria-pressed={displayMode === "map"} className={displayMode === "map" ? "is-active" : ""} onClick={() => toggleDisplayMode("map")}>2D</button><button type="button" title="Globe : examiner les relations à l’échelle mondiale" aria-pressed={displayMode === "globe"} className={displayMode === "globe" ? "is-active" : ""} onClick={() => toggleDisplayMode("globe")}>GLOBE</button><button type="button" title="Vue tactique : incliner la carte pour observer une zone de près" aria-pressed={displayMode === "tactical"} className={displayMode === "tactical" ? "is-active" : ""} onClick={() => toggleDisplayMode("tactical")}>TAC</button></div></div>
+        <section ref={mapStageRef} className={`world-map-stage ${areFiltersVisible ? "" : "filters-hidden"}`} aria-label="Carte mondiale des relations géopolitiques">
+          <div className="map-mode-controls" aria-label="Mode de projection"><span><Globe2 size={14} aria-hidden="true" /> VUE</span><div className="display-mode-switch"><button type="button" title="Carte plane : déplacer et zoomer selon les conventions cartographiques" aria-pressed={displayMode === "map"} className={displayMode === "map" ? "is-active" : ""} onClick={() => toggleDisplayMode("map")}>2D</button><button type="button" title="Globe : examiner les relations à l’échelle mondiale" aria-pressed={displayMode === "globe"} className={displayMode === "globe" ? "is-active" : ""} onClick={() => toggleDisplayMode("globe")}>GLOBE</button><button type="button" title="Vue tactique : incliner la carte pour observer une zone de près" aria-pressed={displayMode === "tactical"} className={displayMode === "tactical" ? "is-active" : ""} onClick={() => toggleDisplayMode("tactical")}>TAC</button></div><button className="filter-visibility-toggle" type="button" onClick={() => setAreFiltersVisible((visible) => !visible)} aria-pressed={areFiltersVisible} title={areFiltersVisible ? "Masquer les filtres" : "Afficher les filtres"}>{areFiltersVisible ? <Eye size={15} /> : <EyeOff size={15} />}</button></div>
           <DeckGL
             key={displayMode === "globe" ? "globe" : `${viewKey}-${displayMode}`}
             views={globeView}
@@ -976,7 +1018,6 @@ export default function Home() {
             onViewStateChange={displayMode === "globe" ? ({ viewState }) => setGlobeCamera(viewState as typeof globeCamera) : undefined}
             layers={layers}
             getCursor={({ isDragging, isHovering }) => isDragging ? "grabbing" : isHovering ? "pointer" : "grab"}
-            getTooltip={(info) => info.object ? { text: tooltipFor(info.object, info.layer?.id) } : null}
             onHover={(info) => {
               if (info.object && info.layer?.id.startsWith("geopolitical-arcs")) setHoveredRelation({ relation: info.object as Relation, x: info.x, y: info.y });
               else setHoveredRelation(null);
@@ -1019,7 +1060,7 @@ export default function Home() {
 
           <section className="organization-filter-panel" aria-label="Filtrer les organisations et gérer les relevés"><p><Building2 size={14} /> ORGANISATIONS · CHOIX MULTIPLES</p><div>{ORGANIZATIONS.slice(0, 8).map((organization) => <button type="button" key={organization.id} className={activeOrganizationIds.includes(organization.id) ? "is-active" : ""} onClick={() => toggleOrganizationFilter(organization.id)} aria-pressed={activeOrganizationIds.includes(organization.id)}>{organization.acronym}</button>)}</div>{activeOrganizationIds.length > 0 && <small>{activeOrganizationIds.length} organisation{activeOrganizationIds.length > 1 ? "s" : ""} sélectionnée{activeOrganizationIds.length > 1 ? "s" : ""}</small>}{showConflictHeat && <div className="ucdp-gravity-legend"><b>UCDP GED · LECTURE DES SEUILS</b><span><i className="is-neutral" /> Tous · visibilité du sous-ensemble agrégé</span><span><i className="is-low" /> 500+ · signal de vigilance</span><span><i className="is-medium" /> 2 000+ · intensité élevée</span><span><i className="is-critical" /> 10 000+ · alerte critique</span></div>}{savedSnapshots.length > 0 && <div className="saved-snapshots-list"><b>RELEVÉS MÉMORISÉS</b>{savedSnapshots.slice(0, 3).map((snapshot) => <div key={snapshot.createdAt}><button type="button" onClick={() => applySavedSnapshot(snapshot)} title="Réappliquer les filtres de ce relevé">{snapshot.name}</button><button type="button" onClick={() => deleteSavedSnapshot(snapshot.createdAt)} aria-label={`Supprimer ${snapshot.name}`} title="Supprimer ce relevé"><X size={12} /></button></div>)}</div>}</section>
 
-          <section className="period-wheel-picker" aria-label="Sélecteur de période à listes défilantes"><p><CalendarDays size={14} /> PÉRIODE · MOLETTES</p>{(["start", "end"] as const).map((boundary) => { const date = boundary === "start" ? periodStartDate : periodEndDate; return <div key={boundary}><b>{boundary === "start" ? "DE" : "À"} {formatDateFr(date)}</b><span><select aria-label={`${boundary === "start" ? "Jour de début" : "Jour de fin"}`} value={date.getDate()} onChange={(event) => updatePeriodDate(boundary, "day", Number(event.target.value))}>{Array.from({ length: 31 }, (_, index) => <option key={index + 1} value={index + 1}>{String(index + 1).padStart(2, "0")}</option>)}</select><select aria-label={`${boundary === "start" ? "Mois de début" : "Mois de fin"}`} value={date.getMonth()} onChange={(event) => updatePeriodDate(boundary, "month", Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => <option key={index} value={index}>{String(index + 1).padStart(2, "0")}</option>)}</select><select aria-label={`${boundary === "start" ? "Année de début" : "Année de fin"}`} value={date.getFullYear()} onChange={(event) => updatePeriodDate(boundary, "year", Number(event.target.value))}>{Array.from({ length: 168 }, (_, index) => 1858 + index).map((year) => <option key={year} value={year}>{year}</option>)}</select></span></div>; })}</section>
+          <section className={`period-wheel-picker ${isPeriodAnimating ? "is-changing" : ""}`} aria-label="Sélecteur de période à listes défilantes"><p><CalendarDays size={14} /> PÉRIODE · MOLETTES</p>{(["start", "end"] as const).map((boundary) => { const date = boundary === "start" ? periodStartDate : periodEndDate; return <div key={boundary}><b>{boundary === "start" ? "DE" : "À"} {formatDateFr(date)}</b><span><select aria-label={`${boundary === "start" ? "Jour de début" : "Jour de fin"}`} value={date.getDate()} onChange={(event) => updatePeriodDate(boundary, "day", Number(event.target.value))}>{Array.from({ length: 31 }, (_, index) => <option key={index + 1} value={index + 1}>{String(index + 1).padStart(2, "0")}</option>)}</select><select aria-label={`${boundary === "start" ? "Mois de début" : "Mois de fin"}`} value={date.getMonth()} onChange={(event) => updatePeriodDate(boundary, "month", Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => <option key={index} value={index}>{String(index + 1).padStart(2, "0")}</option>)}</select><select aria-label={`${boundary === "start" ? "Année de début" : "Année de fin"}`} value={date.getFullYear()} onChange={(event) => updatePeriodDate(boundary, "year", Number(event.target.value))}>{Array.from({ length: 168 }, (_, index) => 1858 + index).map((year) => <option key={year} value={year}>{year}</option>)}</select></span></div>; })}</section>
 
           <section className="relation-timeline" aria-label="Timeline des relations"><div><Clock3 size={15} aria-hidden="true" /><span>TIMELINE</span></div><button type="button" onClick={() => stepTimeline(-1)} aria-label="Année précédente"><ChevronLeft size={16} /></button><div className="timeline-slider-wrap"><input type="range" min="1858" max="2025" value={timelineYear} onChange={(event) => setTimelineYear(Number(event.target.value))} onPointerMove={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setTimelinePreviewYear(Math.round(1858 + ((event.clientX - rect.left) / rect.width) * (2025 - 1858))); }} onPointerLeave={() => setTimelinePreviewYear(null)} aria-label="Année des relations" />{timelinePreviewYear !== null && <div className="timeline-preview"><b>{timelinePreviewYear}</b><span>{RELATIONS.filter((relation) => isRelationActiveAt(relation, timelinePreviewYear)).length} liens du corpus</span></div>}</div><button type="button" onClick={() => stepTimeline(1)} aria-label="Année précédente"><ChevronRight size={16} /></button><strong>{timelineYear}</strong><p>{activeRelations.length} liens actifs</p></section>
 
@@ -1033,13 +1074,15 @@ export default function Home() {
             </>; })()}
           </aside>
 
+          {(selectedCountry || selectedRelation || selectedOrganization) && (() => { const actor = selectedCountry ? { id: selectedCountry.iso3, name: selectedCountry.name, position: selectedCountry.position } : selectedRelation ? selectedRelation.source : selectedOrganization ? { id: selectedOrganization.id, name: selectedOrganization.name, position: selectedOrganization.position } : null; if (!actor) return null; const wikidataContext = WIKIDATA_RESOLVED_RELATIONS.filter((relation) => relation.source.id === actor.id || relation.target.id === actor.id); const ucdpContext = UCDP_CONFLICT_CELLS.filter((cell) => cell.year >= periodStartDate.getFullYear() && cell.year <= periodEndDate.getFullYear() && Math.abs(cell.position[0] - actor.position[0]) < 12 && Math.abs(cell.position[1] - actor.position[1]) < 9); const fatalities = ucdpContext.reduce((sum, cell) => sum + cell.fatalities, 0); return <aside className="context-evidence-panel" aria-live="polite" aria-label="Contexte UCDP et Wikidata"><p><Database size={13} /> CONTEXTE SOURCÉ</p><div><b>Wikidata</b><span>{wikidataContext.length} relation{wikidataContext.length > 1 ? "s" : ""} P47/P463 pour {actor.name}</span>{wikidataContext.slice(0, 2).map((relation) => <a key={relation.id} href={wikidataUrl(relation.source.id === actor.id ? relation.target.qid : relation.source.qid)} target="_blank" rel="noreferrer">{relation.title} · {relation.start ? `${relation.start}${relation.end ? `–${relation.end}` : "–auj."}` : "structurelle"}<ExternalLink size={11} /></a>)}</div><div><b>UCDP GED</b><span>{ucdpContext.length} cellule{ucdpContext.length > 1 ? "s" : ""} proche{ucdpContext.length > 1 ? "s" : ""} · {fatalities.toLocaleString("fr-FR")} décès agrégés</span><a href={UCDP_GED_SOURCE} target="_blank" rel="noreferrer">Sous-ensemble {UCDP_GED_PERIOD} <ExternalLink size={11} /></a></div></aside>; })()}
+
           <aside className={`world-relation-panel ${selectedRelation ? "is-open" : ""}`} aria-live="polite" aria-label="Détail de la relation"><button className="detail-close" type="button" onClick={() => setSelectedRelation(null)} aria-label="Fermer le détail"><X size={17} /></button>{selectedRelation && (() => { const reference = relationReference(selectedRelation); const type = RELATION_TYPES.find((entry) => entry.id === selectedRelation.type) ?? RELATION_TYPES[0]; const intensity = Math.min(10, Math.max(2, Math.round((selectedRelation.detail.length + (selectedRelation.end ? 30 : 10)) / 24))); return <><div className="relation-profile-head"><p className="eyebrow"><i style={{ backgroundColor: `rgb(${type.color.join(" ")})` }} /> {type.label.toUpperCase()}</p><h3>{selectedRelation.source.name}<span>→</span>{selectedRelation.target.name}</h3></div><div className="relation-quick-actions"><button type="button" onClick={() => setSelectedActorId(selectedRelation.source.id)}><UsersRound size={14} /> Voir les acteurs</button><a href={reference.url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Voir la relation</a><button type="button" onClick={() => navigator.clipboard?.writeText(window.location.href)}><ArrowUpRight size={14} /> Partager</button></div><div className="relation-facts"><div><span>PÉRIODE</span><strong>{relationPeriodLabel(selectedRelation)}</strong></div><div><span>ÉCHELLE</span><strong>{activeRegions.includes("all") ? "Mondiale" : activeRegions.length > 1 ? "Multi-régionale" : "Régionale"}</strong></div><div><span>INTENSITÉ</span><strong><i><b style={{ width: `${intensity * 10}%`, backgroundColor: `rgb(${type.color.join(" ")})` }} /></i>{intensity}/10</strong></div></div><section className="relation-summary"><p>RÉSUMÉ</p><h4>{selectedRelation.title}</h4><span>{selectedRelation.detail}</span></section><section className="relation-history-card"><p><Clock3 size={14} /> HISTORIQUE <em>{selectedRelation.start ? "1 événement" : "Structurel"}</em></p><div><strong>{selectedRelation.start ?? "—"}</strong><span>{selectedRelation.end ? `→ ${selectedRelation.end}` : "→ aujourd’hui"}</span></div><small>Dernière mise à jour : lecture de la source active</small></section><a className="relation-source-link" href={reference.url} target="_blank" rel="noreferrer"><BookOpen size={14} /> {reference.label} <ExternalLink size={14} /></a><div className="relation-bottom-actions"><button type="button" onClick={downloadScenarioSnapshot}><Printer size={15} /> PDF</button><button type="button" onClick={openContribution}><PenLine size={15} /> Correction</button></div></>; })()}</aside>
 
           <aside className={`bilateral-comparator ${isComparatorOpen ? "is-open" : ""}`} aria-label="Comparateur bilatéral"><button className="detail-close" type="button" onClick={() => setIsComparatorOpen(false)} aria-label="Fermer le comparateur"><X size={17} /></button><p className="eyebrow"><GitCompareArrows size={14} aria-hidden="true" /> COMPARATEUR BILATÉRAL</p><h3>Deux acteurs,<br /><i>une relation</i>.</h3><div className="comparator-selects"><label><span>ACTEUR A</span><select value={compareLeftId} onChange={(event) => setCompareLeftId(event.target.value)}>{allCountries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label><span className="compare-arrow">↔</span><label><span>ACTEUR B</span><select value={compareRightId} onChange={(event) => setCompareRightId(event.target.value)}>{allCountries.map((country) => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</select></label></div><section className="comparison-history" aria-label="Évolution historique des relations"><div className="comparison-history-heading"><Activity size={14} /><span>ÉVOLUTION HISTORIQUE</span><b>{historyStart} — 2025</b></div>{datedBilateralHistory.length ? <div className="history-lines">{datedBilateralHistory.map((relation) => <div className="history-line" key={relation.id}><span>{relation.type}</span><div className="history-track"><i style={{ left: `${((relation.start - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%`, width: `${(((relation.end ?? 2025) - relation.start) / Math.max(1, 2025 - historyStart)) * 100}%`, backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><em style={{ left: `${((timelineYear - historyStart) / Math.max(1, 2025 - historyStart)) * 100}%` }} /></div></div>)}</div> : <div className="comparison-empty">Aucune évolution datée n’est renseignée pour cette paire ; les liens structurels restent visibles dans le résumé.</div>}</section><div className="comparison-summary"><p>{compareLeft?.name ?? "Acteur A"}<span>↔</span>{compareRight?.name ?? "Acteur B"}</p>{bilateralRelations.length > 0 ? bilateralRelations.map((relation) => { const reference = relationReference(relation); return <article key={relation.id}><i style={{ backgroundColor: `rgb(${relationColor(relation.type).join(" ")})` }} /><div><b>{relation.title}</b><small>{relation.type} · {relationPeriodLabel(relation)}</small><span>{relation.detail}</span><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} <ExternalLink size={12} /></a></div></article>; }) : <div className="comparison-empty">Aucune relation active de ce corpus pour la période sélectionnée.</div>}</div><div className="comparison-exports"><button type="button" onClick={downloadComparisonCsv}><FileSpreadsheet size={14} /> CSV</button><button type="button" onClick={downloadComparisonPdf}><FileText size={14} /> Rapport PDF</button></div><button className="comparison-focus" type="button" onClick={() => { if (compareLeft && compareRight) { setSelectedActorId(null); setFocusView({ longitude: (compareLeft.position[0] + compareRight.position[0]) / 2, latitude: (compareLeft.position[1] + compareRight.position[1]) / 2, zoom: displayMode === "globe" ? 0.65 : 2.2 }); setViewKey((key) => key + 1); } }}><LocateFixed size={14} /> Cadrer les deux acteurs</button></aside>
 
           <aside className={`contribution-panel ${isContributionOpen ? "is-open" : ""}`} aria-label="Proposer ou valider une relation"><button className="detail-close" type="button" onClick={() => setIsContributionOpen(false)} aria-label="Fermer la contribution"><X size={17} /></button><p className="eyebrow"><PenLine size={14} aria-hidden="true" /> CONTRIBUTION SOURCÉE</p><h3>Proposer une<br /><i>relation</i>.</h3><p>Chaque proposition exige une source vérifiable et reste en attente de validation éditoriale.</p>{!isAuthenticated ? <button type="button" className="contribution-login" onClick={openContribution}>Se connecter pour contribuer <ArrowUpRight size={14} /></button> : <form className="proposal-form" onSubmit={submitProposal}><label>ACTEUR SOURCE<input required value={proposalForm.sourceActor} onChange={(event) => setProposalForm((form) => ({ ...form, sourceActor: event.target.value }))} placeholder="Ex. France" /></label><label>ACTEUR CIBLE<input required value={proposalForm.targetActor} onChange={(event) => setProposalForm((form) => ({ ...form, targetActor: event.target.value }))} placeholder="Ex. Union européenne" /></label><label>TYPOLOGIE<select value={proposalForm.relationType} onChange={(event) => setProposalForm((form) => ({ ...form, relationType: event.target.value }))}>{RELATION_TYPES.map((type) => <option value={type.id} key={type.id}>{type.label}</option>)}</select></label><label>INTITULÉ<input required minLength={4} value={proposalForm.title} onChange={(event) => setProposalForm((form) => ({ ...form, title: event.target.value }))} placeholder="Nom de la relation" /></label><label>DÉTAIL<textarea required minLength={20} value={proposalForm.detail} onChange={(event) => setProposalForm((form) => ({ ...form, detail: event.target.value }))} placeholder="Périmètre, contexte et qualification de la relation" /></label><label>SOURCE VÉRIFIABLE<input required type="url" value={proposalForm.sourceUrl} onChange={(event) => setProposalForm((form) => ({ ...form, sourceUrl: event.target.value }))} placeholder="https://…" /></label><div className="proposal-years"><label>DÉBUT<input type="number" min="1800" max="2100" value={proposalForm.startYear} onChange={(event) => setProposalForm((form) => ({ ...form, startYear: event.target.value }))} /></label><label>FIN<input type="number" min="1800" max="2100" value={proposalForm.endYear} onChange={(event) => setProposalForm((form) => ({ ...form, endYear: event.target.value }))} /></label></div><button type="submit" disabled={proposalMutation.isPending}>{proposalMutation.isPending ? "Envoi…" : "Soumettre à validation"} <ArrowUpRight size={14} /></button>{proposalMutation.isSuccess && <small className="proposal-success"><Check size={13} /> Proposition transmise à la revue éditoriale.</small>}{proposalMutation.error && <small className="proposal-error">La proposition doit comporter une source et des dates cohérentes.</small>}</form>}{user?.role === "admin" && <section className="proposal-review"><p><Check size={13} /> REVUE ÉDITORIALE</p>{pendingProposalsQuery.isLoading ? <small>Lecture des propositions…</small> : pendingProposalsQuery.data?.length ? pendingProposalsQuery.data.map((proposal) => <article key={proposal.id}><b>{proposal.sourceActor} → {proposal.targetActor}</b><span>{proposal.title}</span><a href={proposal.sourceUrl} target="_blank" rel="noreferrer">Source <ExternalLink size={12} /></a><div><button type="button" onClick={() => reviewMutation.mutate({ id: proposal.id, status: "approved" })}>Valider</button><button type="button" onClick={() => reviewMutation.mutate({ id: proposal.id, status: "rejected" })}>Refuser</button></div></article>) : <small>Aucune proposition en attente.</small>}</section>}</aside>
 
-          <div className="world-map-actions"><Button className="instrument-button" variant="outline" title="Revenir au cadrage mondial" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Recentrer</Button><Button className="instrument-button compare-trigger" variant="outline" title="Sélectionner deux pays et examiner leurs relations" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button contribution-trigger" variant="outline" title="Proposer une relation sourcée à validation éditoriale" onClick={openContribution}><PenLine size={16} aria-hidden="true" /> Annoter</Button><Button className="instrument-button snapshot-trigger" variant="outline" title="Exporter la carte et les filtres actifs dans un relevé PDF" onClick={downloadScenarioSnapshot}><Printer size={16} aria-hidden="true" /> Relevé PDF</Button><Button className="instrument-button report-trigger" variant="outline" title="Produire un rapport analytique sourcé" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Rapport PDF</Button><Button className="instrument-button saved-snapshot-trigger" variant="outline" title="Nommer et conserver ce relevé filtré pour la session" onClick={saveNamedSnapshot}><BookOpen size={16} aria-hidden="true" /> Enregistrer{savedSnapshots.length ? ` (${savedSnapshots.length})` : ""}</Button><p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : displayMode === "tactical" ? "Tactique 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
+          <div className="world-map-actions"><Button className="instrument-button" variant="outline" title="Revenir au cadrage mondial" onClick={resetView}><LocateFixed size={16} aria-hidden="true" /> Recentrer</Button><Button className="instrument-button compare-trigger" variant="outline" title="Sélectionner deux pays et examiner leurs relations" onClick={() => setIsComparatorOpen(true)}><GitCompareArrows size={16} aria-hidden="true" /> Comparer</Button><Button className="instrument-button contribution-trigger" variant="outline" title="Proposer une relation sourcée à validation éditoriale" onClick={openContribution}><PenLine size={16} aria-hidden="true" /> Annoter</Button><Button className="instrument-button snapshot-trigger" variant="outline" title="Exporter la carte et les filtres actifs dans un relevé PDF" onClick={downloadScenarioSnapshot}><Printer size={16} aria-hidden="true" /> Relevé PDF</Button><Button className="instrument-button report-trigger" variant="outline" title="Produire un rapport analytique sourcé" onClick={downloadScenarioSnapshot}><FileText size={16} aria-hidden="true" /> Rapport PDF</Button><Button className="instrument-button saved-snapshot-trigger" variant="outline" title="Nommer et conserver ce relevé filtré pour la session" onClick={saveNamedSnapshot}><BookOpen size={16} aria-hidden="true" /> Enregistrer{savedSnapshots.length ? ` (${savedSnapshots.length})` : ""}</Button><Button className="instrument-button share-snapshot-trigger" variant="outline" title="Partager le dernier relevé sauvegardé" onClick={() => void shareSavedSnapshot()}><Share2 size={16} aria-hidden="true" /> Partager</Button>{shareNotice && <span className="share-notice" role="status">{shareNotice}</span>}<p><Activity size={13} aria-hidden="true" /> {displayMode === "globe" ? "Globe 3D" : displayMode === "tactical" ? "Tactique 3D" : selectedViewConfig.label} · {timelineYear}</p></div>{dataError && <p className="map-data-error" role="status">Les indicateurs mondiaux n’ont pas pu être chargés. Veuillez réessayer plus tard.</p>}
         </section>
       </main>
 

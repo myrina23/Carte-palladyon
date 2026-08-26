@@ -15,6 +15,21 @@
 - [x] Ajouter une légende UCDP détaillant les seuils de gravité et leur lecture.
 - [x] Revalider explicitement les exports et interactions bureau/mobile après preuve navigateur de l’export PDF cartographique réel.
 
+## Contrôles, recherche et contexte relationnel
+
+- [x] Éliminer le doublon d’infobulles lors du survol d’une relation.
+- [x] Ajouter un contrôle œil pour afficher ou masquer les filtres cartographiques.
+- [x] Rendre la recherche prédictive et exhaustive pour tous les résultats correspondants.
+- [x] Assigner une couleur de base distincte et lisible à chaque typologie de relation.
+- [x] Permettre de désélectionner un pays en cliquant à nouveau sur lui.
+- [x] Empêcher l’ouverture automatique de la légende contextuelle lors du choix d’une typologie.
+- [x] Intégrer le nouveau signe de logo fourni dans l’identité Atlas Flux.
+- [x] Ajouter un basculement accessible clair/sombre avec icône lune.
+- [x] Enrichir les fiches pays, organisations et relations à partir des données UCDP et Wikidata disponibles.
+- [x] Animer avec fluidité les changements de période par molette.
+- [x] Permettre de partager les relevés enregistrés via un lien unique et via l’API de partage du navigateur.
+- [x] Tester les parcours desktop et mobile, la recherche, les tooltips, les thèmes et le partage.
+
 ## Charte utilisateur, filtres fusionnés et cohérence 3D
 
 - [x] Achever l’audit source des accents orange/corail hérités et conserver uniquement les usages d’alerte légitimes.
