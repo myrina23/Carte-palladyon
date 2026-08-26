@@ -107,3 +107,23 @@ L’extension conserve les relations **P47** et **P463** effectivement présente
 | --- | --- |
 | [Wikidata P47](https://www.wikidata.org/wiki/Property:P47) | Frontières et voisinages géographiques, dont le caractère terrestre ou maritime est précisé dans la légende. |
 | [Wikidata P463](https://www.wikidata.org/wiki/Property:P463) | Appartenances organisationnelles visualisées comme liens juridiques structurels. |
+
+## Référentiel territorial élargi
+
+Atlas Flux adopte la couche **Natural Earth Admin 0 – Map Units** à l’échelle 1:110m comme référence cartographique légère. Natural Earth y distingue 298 unités cartographiques et 360 sous-unités, notamment les quatre nations constitutives du Royaume-Uni ainsi que de nombreux territoires, dépendances et îles. Cette granularité permet de rechercher et sélectionner, par exemple, l’Écosse, les îles Féroé, Gibraltar ou la Polynésie française, sans les présenter à tort comme des États souverains.
+
+| Source | Usage dans Atlas Flux |
+| --- | --- |
+| [Natural Earth Admin 0 – Details](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-details/) | Géométries et statut de cartographic map unit ; la source souligne que ce niveau est distinct de la souveraineté et des codes ISO. |
+| [GeoNames Country Codes](https://www.geonames.org/countries/) | Référence complémentaire pour les codes ISO et les territoires dépendants disposant de codes. |
+| [geoBoundaries](https://www.geoboundaries.org/) | Source de complément futur pour les limites administratives détaillées sous licence CC BY 4.0. |
+
+## Qualificateurs temporels Wikidata — 26 août 2026
+
+Les appartenances institutionnelles **P463** déjà affichées ont été complétées par une lecture directe de l’API [Wikidata `wbgetentities`](https://www.wikidata.org/w/api.php?action=help&modules=wbgetentities) sur les énoncés concernés. Les qualificateurs **P580** (*début*) et **P582** (*fin*) ne sont intégrés que lorsqu’ils sont présents dans l’énoncé : par exemple, les appartenances de la Turquie à l’ONU (1945) et à l’OIAC (1997), ainsi que les séquences UNESCO des États-Unis (1946–1984, 2003–2018, depuis 2023). Chaque relation datée conserve l’identifiant d’énoncé Wikidata dans sa provenance cliquable.
+
+Les relations P47 et les P463 dépourvues de ces qualificateurs restent **structurelles non datées**. Elles enrichissent le réseau à l’instant de lecture, sans être artificiellement injectées dans les écarts temporels A→B.
+
+## Contrôles d’export — 26 août 2026
+
+Les helpers effectivement utilisés par les boutons **Imprimer**, **Rapport PDF** et **CSV** ont été testés par Vitest. Les cas validés couvrent : un PDF Atlas Flux contenant une image de carte, un diagramme coloré de typologies et une source cliquable ; un rapport bilatéral utilisant ce même générateur ; et le CSV bilatéral UTF‑8 avec paires d’acteurs, période et URL de provenance. La carte est jointe lorsque le canevas MapLibre peut être exporté ; le rapport reste généré si le navigateur interdit la capture du canevas.

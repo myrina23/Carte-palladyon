@@ -1,8 +1,8 @@
 /**
  * Atlas Flux — relations résolues depuis l’export SPARQL Wikidata transmis.
  * P47 : partage une frontière, terrestre ou maritime ; P463 : membre d’une organisation.
- * L’export ne livre pas les qualificateurs temporels de chaque énoncé : ces relations sont
- * donc structurelles, et ne doivent pas être interprétées comme datées.
+ * L’export initial ne livrait pas les qualificateurs temporels. Les relations pour lesquelles
+ * l’API Wikidata retourne P580 (début) ou P582 (fin) sont désormais datées et reliées à leur énoncé.
  */
 export type WikidataActor = { id: string; qid: string; name: string; position: [number, number] };
 export type WikidataResolvedRelation = {
@@ -13,7 +13,10 @@ export type WikidataResolvedRelation = {
   type: "geopolitique" | "juridique";
   title: string;
   detail: string;
-  temporalScope: "structural";
+  temporalScope?: "structural";
+  start?: number;
+  end?: number;
+  statementId?: string;
 };
 
 const ACTORS = {
@@ -68,8 +71,59 @@ function border(id: string, source: WikidataActor, target: WikidataActor): Wikid
   return { id, source, target, property: "P47", type: "geopolitique", temporalScope: "structural", title: `Frontière ${source.name}–${target.name}`, detail: `Relation de voisinage géographique (P47) résolue depuis l’export Wikidata fourni. Cette propriété peut couvrir une frontière terrestre ou maritime ; aucune période n’est fournie dans l’export.` };
 }
 
+type MembershipQualifier = { start?: number; end?: number; statementId: string };
+
+const MEMBERSHIP_QUALIFIERS: Record<string, MembershipQualifier> = {
+  "wd-tur-un": { start: 1945, statementId: "q43$306AF85F-67DB-4223-B48F-B3ECB162C5C7" },
+  "wd-tur-opcw": { start: 1997, statementId: "Q43$91A0F7BB-C35A-40DD-9F25-57790DA93D3F" },
+  "wd-tur-interpol": { start: 1956, statementId: "Q43$3494F3B0-0122-49B6-B952-93F9FC2C3D6A" },
+  "wd-tur-unesco": { start: 1946, statementId: "Q43$e52059b7-49e3-094c-de9f-fc8db85c0078" },
+  "wd-usa-un": { start: 1945, statementId: "q30$736C3B3B-65D3-49B2-BAAF-770662D90C7B" },
+  "wd-usa-apec": { start: 1989, statementId: "q30$69E94D1D-37AE-4791-A2BD-429BFC6C023D" },
+  "wd-usa-opcw": { start: 1997, statementId: "q30$DEFEF6E5-FDF9-4819-BE70-3D44B81EE778" },
+  "wd-usa-interpol": { start: 1923, statementId: "Q30$F2175F4D-3E51-4377-95C6-900B1B34A651" },
+  "wd-usa-unesco-1": { start: 1946, end: 1984, statementId: "Q30$ffcd86ff-4e66-a822-79e0-2a404627972e" },
+  "wd-usa-unesco-2": { start: 2003, end: 2018, statementId: "Q30$0D0DA1D7-FA1E-4B78-B107-E4E6C63B5626" },
+  "wd-usa-unesco-3": { start: 2023, statementId: "Q30$c235421e-43a0-090e-0574-295eafda9f7d" },
+  "wd-bgr-un": { start: 1955, statementId: "q219$201AF854-1B5D-4AD1-BFE3-8A35FA657195" },
+  "wd-bgr-wto": { start: 1996, statementId: "q219$DC3192EE-5DB0-4297-BCBF-B4983B08B330" },
+  "wd-bgr-opcw": { start: 1997, statementId: "q219$03A15A0E-BD19-418E-BAB3-4AFFB345478A" },
+  "wd-bgr-interpol": { start: 1989, statementId: "Q219$5DC56E07-3FB1-46F4-99F7-C30B6E769315" },
+  "wd-bgr-unesco": { start: 1956, statementId: "Q219$12732483-4eef-20f3-00b2-aae4a2040a25" },
+  "wd-jpn-un": { start: 1956, statementId: "q17$5A768085-CC53-4C1A-9D3E-6252A5079513" },
+  "wd-jpn-wto": { start: 1995, statementId: "q17$88143F8E-F0CD-43A1-89AA-B07E36AE0470" },
+  "wd-jpn-apec": { start: 1989, statementId: "q17$D4A44A32-D35A-4BA8-88E6-B0BDE8897706" },
+  "wd-jpn-opcw": { start: 1997, statementId: "q17$FB42E364-1D55-4CEF-823C-82ACDDCA8160" },
+  "wd-jpn-interpol": { start: 1956, statementId: "Q17$C7135D8F-9943-43C9-8A05-7530BB754DDB" },
+  "wd-jpn-unesco": { start: 1951, statementId: "Q17$33d5c312-41f4-e5d2-3fe8-a9a46682cc6e" },
+  "wd-vnm-un": { start: 1977, statementId: "q881$E4758C3C-BFB8-4B83-96FD-04FF06D62949" },
+  "wd-vnm-wto": { start: 2007, statementId: "q881$6B6F56C7-8644-4F5E-9648-82A9FD4F1A05" },
+  "wd-vnm-apec": { start: 1998, statementId: "q881$FDD41BDE-8AE8-496D-9363-530158BF6A11" },
+  "wd-vnm-opcw": { start: 1998, statementId: "Q881$A9B52F99-B09B-40FC-9D7F-7F8117213AE5" },
+  "wd-vnm-interpol": { start: 1991, statementId: "Q881$95D7F3FD-4584-4376-8BBC-4C08E09D242E" },
+  "wd-vnm-unesco": { start: 1951, statementId: "Q881$bbcc5690-487d-45d7-e4fb-22e3c669a97a" },
+  "wd-kor-un": { start: 1991, statementId: "q884$0447AD6F-2FA8-4DD9-8D54-432DE8A8FEA7" },
+  "wd-kor-wto": { start: 1995, statementId: "q884$8A7D1892-5392-4E1F-9B0F-3E32FBE17C3C" },
+  "wd-kor-oecd": { start: 1996, statementId: "q884$6BC7E4FE-709F-4741-A34F-A5F2588050EF" },
+  "wd-kor-apec": { start: 1989, statementId: "q884$6EC32C9A-2843-40A2-880A-90CA67D11D66" },
+  "wd-kor-opcw": { start: 1997, statementId: "q884$9018A71D-6225-45E5-8969-54A78F73D8A2" },
+  "wd-kor-interpol": { start: 1964, statementId: "Q884$c697bcff-47eb-b740-2cf9-0f6469947e2f" },
+  "wd-kor-unesco": { start: 1950, statementId: "Q884$3dc14817-4819-a408-3b62-e8310fc86874" },
+  "wd-ind-un": { start: 1945, statementId: "q668$AA06ADE0-D225-4AE2-815A-4CAEA9413FB7" },
+  "wd-ind-wto": { start: 1995, statementId: "q668$A7B7F11B-C005-4486-BB87-3EB66EA43FD8" },
+  "wd-ind-opcw": { start: 1997, statementId: "q668$99A6DE8E-4BAE-46E1-ADC1-CBDBF1C63906" },
+  "wd-ind-interpol": { start: 1949, statementId: "Q668$586A5C46-1B34-4A3B-B5E8-1530FA6D1902" },
+  "wd-ind-unesco": { start: 1946, statementId: "Q668$bedb0c53-459b-59fa-e70a-711789f345aa" },
+  "wd-syr-un": { start: 1945, statementId: "q858$F2CD820A-1A88-4554-A23E-A6822F62EC54" },
+  "wd-syr-opcw": { start: 2013, statementId: "q858$90937E15-CA27-453C-A46F-2FC5180BD357" },
+  "wd-syr-interpol": { start: 1953, statementId: "Q858$B35690B5-8FCB-4262-ABE7-03AD9C9651B3" },
+  "wd-syr-unesco": { start: 1946, statementId: "Q858$60a13136-46aa-d371-57c5-a8af970745a2" },
+};
+
 function membership(id: string, source: WikidataActor, target: WikidataActor): WikidataResolvedRelation {
-  return { id, source, target, property: "P463", type: "juridique", temporalScope: "structural", title: `Membre de ${target.name}`, detail: `Appartenance organisationnelle (P463) résolue depuis l’export Wikidata fourni. L’export ne contient pas de qualificateur de début ou de fin pour cette appartenance.` };
+  const qualifier = MEMBERSHIP_QUALIFIERS[id];
+  const period = qualifier ? `${qualifier.start ?? "date inconnue"}${qualifier.end ? `–${qualifier.end}` : "–aujourd’hui"}` : "date non fournie";
+  return { id, source, target, property: "P463", type: "juridique", temporalScope: qualifier ? undefined : "structural", start: qualifier?.start, end: qualifier?.end, statementId: qualifier?.statementId, title: `Membre de ${target.name}`, detail: `Appartenance organisationnelle (P463) résolue depuis Wikidata. Période qualifiée : ${period}.` };
 }
 
 export const WIKIDATA_RESOLVED_RELATIONS: WikidataResolvedRelation[] = [
@@ -87,6 +141,14 @@ export const WIKIDATA_RESOLVED_RELATIONS: WikidataResolvedRelation[] = [
   membership("wd-kor-un", ACTORS.southKorea, ACTORS.unitedNations), membership("wd-kor-wto", ACTORS.southKorea, ACTORS.worldTradeOrganization), membership("wd-kor-oecd", ACTORS.southKorea, ACTORS.oecd), membership("wd-kor-apec", ACTORS.southKorea, ACTORS.apec), membership("wd-kor-iea", ACTORS.southKorea, ACTORS.iea), membership("wd-kor-opcw", ACTORS.southKorea, ACTORS.opcw),
   membership("wd-ind-un", ACTORS.india, ACTORS.unitedNations), membership("wd-ind-wto", ACTORS.india, ACTORS.worldTradeOrganization), membership("wd-ind-opcw", ACTORS.india, ACTORS.opcw),
   membership("wd-syr-un", ACTORS.syria, ACTORS.unitedNations), membership("wd-syr-who", ACTORS.syria, ACTORS.who), membership("wd-syr-opcw", ACTORS.syria, ACTORS.opcw),
+  membership("wd-tur-interpol", ACTORS.turkey, ACTORS.interpol), membership("wd-tur-unesco", ACTORS.turkey, ACTORS.unesco),
+  membership("wd-usa-interpol", ACTORS.unitedStates, ACTORS.interpol), membership("wd-usa-unesco-1", ACTORS.unitedStates, ACTORS.unesco), membership("wd-usa-unesco-2", ACTORS.unitedStates, ACTORS.unesco), membership("wd-usa-unesco-3", ACTORS.unitedStates, ACTORS.unesco),
+  membership("wd-bgr-interpol", ACTORS.bulgaria, ACTORS.interpol), membership("wd-bgr-unesco", ACTORS.bulgaria, ACTORS.unesco),
+  membership("wd-jpn-interpol", ACTORS.japan, ACTORS.interpol), membership("wd-jpn-unesco", ACTORS.japan, ACTORS.unesco),
+  membership("wd-vnm-interpol", ACTORS.vietnam, ACTORS.interpol), membership("wd-vnm-unesco", ACTORS.vietnam, ACTORS.unesco),
+  membership("wd-kor-interpol", ACTORS.southKorea, ACTORS.interpol), membership("wd-kor-unesco", ACTORS.southKorea, ACTORS.unesco),
+  membership("wd-ind-interpol", ACTORS.india, ACTORS.interpol), membership("wd-ind-unesco", ACTORS.india, ACTORS.unesco),
+  membership("wd-syr-interpol", ACTORS.syria, ACTORS.interpol), membership("wd-syr-unesco", ACTORS.syria, ACTORS.unesco),
 ];
 
 export function wikidataUrl(qid: string) {

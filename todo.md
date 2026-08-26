@@ -1,5 +1,20 @@
 # Mise à jour Atlas Flux
 
+## Carte centrée acteur, comparaison directe et publication éditoriale
+
+- [x] Retirer les calques d’indicateurs de la carte et les consolider dans les fiches pays et organisations.
+- [x] Ajouter à chaque fiche organisation les informations de contexte qui remplacent les anciens calques d’indicateurs.
+- [x] Étendre le référentiel aux territoires, dépendances et nations constitutives disponibles dans les données de référence.
+- [x] Déplacer la typologie dans l’espace de filtres comme filtre principal, avec légende contextuelle associée.
+- [x] Permettre de comparer deux acteurs par deux clics directs sur la carte.
+- [x] Créer une vue A/B en écran scindé synchronisée pour comparer deux périodes.
+- [x] Ajouter l’impression cartographique instantanée et des rapports PDF analytiques sourcés.
+- [x] Mettre en place un workflow de contribution et validation éditoriale des relations.
+- [x] Vérifier les parcours, les exports et les vues bureau/mobile.
+- [x] Tester explicitement les exports CSV/PDF (impression cartographique, rapport analytique et comparateur) et consigner les cas vérifiés.
+- [x] Extraire et tester les helpers réels d’impression cartographique, de rapport analytique et d’export CSV bilatéral.
+- [x] Consigner les cas d’export vérifiés dans les notes de recherche et le suivi.
+
 ## Légendes contextuelles, évolution A→B et extension Wikidata
 
 - [x] Définir une légende contextuelle détaillée pour chaque typologie et son code visuel.
