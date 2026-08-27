@@ -70,6 +70,7 @@
 
 ## Refonte nocturne Apple-style
 
+- [x] Rédiger un blueprint technique de passation pour finaliser Atlas Flux et l’enrichissement de données.
 - [x] Établir un état des lieux distinguant les fonctions finies, partielles et non engagées, puis cadrer l’enrichissement de données sourcées.
 - [x] Rédiger un référentiel de toutes les consignes Atlas Flux, en retenant la dernière formulation lorsqu’une demande a évolué.
 - [x] Afficher le nombre total de sources et intégrer les références directement dans chaque fiche, sans encart externe.
